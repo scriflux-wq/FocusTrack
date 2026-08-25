@@ -42,11 +42,11 @@ export default async function TodayPage() {
   const categoryMap = new Map(categories.map((c) => [c.id, { name: c.name, color: c.color }]));
   const categoryTotals = getTimeByCategory(entries, categoryMap);
 
-  const windowStart = clampToToday(start, settings.dayStartTime, settings.timezone);
-  // Never claim time that hasn't happened yet is "untracked".
-  const windowEnd = capToNow(clampToToday(start, settings.dayEndTime, settings.timezone), now);
-  const gaps = getUntrackedRanges(entries, windowStart, windowEnd);
-  const untrackedSeconds = getUntrackedSeconds(entries, windowStart, windowEnd);
+  // "Untracked" spans the whole calendar day (from midnight), capped so it
+  // never claims time that hasn't happened yet.
+  const windowEnd = capToNow(end, now);
+  const gaps = getUntrackedRanges(entries, start, windowEnd);
+  const untrackedSeconds = getUntrackedSeconds(entries, start, windowEnd);
 
   const hour = Number(
     now.toLocaleString("en-US", { timeZone: settings.timezone, hour: "2-digit", hour12: false }),
@@ -108,12 +108,4 @@ export default async function TodayPage() {
       <CategorySummary totals={categoryTotals} />
     </div>
   );
-}
-
-/** Combines today's date (from `dayStart`) with a "HH:mm" wall-clock time in `tz`. */
-function clampToToday(dayStart: Date, hhmm: string, tz: string): Date {
-  const [h, m] = hhmm.split(":").map(Number);
-  const local = new Date(dayStart);
-  // dayStart is midnight (00:00) local-time-as-UTC-instant for `tz`; add the offset directly.
-  return new Date(local.getTime() + (h * 60 + m) * 60 * 1000);
 }

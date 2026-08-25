@@ -15,13 +15,11 @@ export default async function TimerPage() {
   const { start, end } = getDayRange(now, settings.timezone);
   const entries = await getFinishedEntriesInRange(user.id, start, end);
 
-  const [sh, sm] = settings.dayStartTime.split(":").map(Number);
-  const [eh, em] = settings.dayEndTime.split(":").map(Number);
-  const windowStart = new Date(start.getTime() + (sh * 60 + sm) * 60000);
-  // Never claim time that hasn't happened yet is "untracked".
-  const windowEnd = capToNow(new Date(start.getTime() + (eh * 60 + em) * 60000), now);
-  const gaps = getUntrackedRanges(entries, windowStart, windowEnd);
-  const untrackedSeconds = getUntrackedSeconds(entries, windowStart, windowEnd);
+  // "Untracked" spans the whole calendar day (from midnight), capped so it
+  // never claims time that hasn't happened yet.
+  const windowEnd = capToNow(end, now);
+  const gaps = getUntrackedRanges(entries, start, windowEnd);
+  const untrackedSeconds = getUntrackedSeconds(entries, start, windowEnd);
 
   return (
     <div className="flex flex-col gap-6">

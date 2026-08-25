@@ -119,13 +119,12 @@ export default async function CalendarPage({
   let weeklyUntrackedSeconds = 0;
   if (view === "week") {
     const now = new Date();
-    const [sh, sm] = settings.dayStartTime.split(":").map(Number);
-    const [eh, em] = settings.dayEndTime.split(":").map(Number);
     for (const day of days) {
-      const windowStart = new Date(day.dayStart.getTime() + (sh * 60 + sm) * 60000);
-      // Never claim time that hasn't happened yet is "untracked".
-      const windowEnd = capToNow(new Date(day.dayStart.getTime() + (eh * 60 + em) * 60000), now);
-      weeklyUntrackedSeconds += getUntrackedSeconds(day.entries, windowStart, windowEnd);
+      const dayEnd = new Date(day.dayStart.getTime() + 24 * 60 * 60 * 1000);
+      // "Untracked" spans the whole calendar day (from midnight), capped so
+      // it never claims time that hasn't happened yet.
+      const windowEnd = capToNow(dayEnd, now);
+      weeklyUntrackedSeconds += getUntrackedSeconds(day.entries, day.dayStart, windowEnd);
     }
   }
 

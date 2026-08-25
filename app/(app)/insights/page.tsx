@@ -60,21 +60,19 @@ export default async function InsightsPage({
   }));
   const mostProductiveDay = getMostProductiveDay(dailyTotals);
 
-  // Untracked time is computed per real calendar day (needs the dayStart/dayEnd
-  // window); skipped for "year" to avoid 365 per-day gap calculations.
+  // Untracked time spans each whole calendar day (from midnight); skipped
+  // for "year" to avoid 365 per-day gap calculations.
   let untrackedSeconds = 0;
   if (period !== "year") {
     const dayMsStart = getDayRange(start, tz).start;
     for (let cursor = dayMsStart; cursor < end; cursor = new Date(cursor.getTime() + DAY_MS)) {
+      const dayEnd = new Date(cursor.getTime() + DAY_MS);
       const dayEntries = entries.filter(
-        (e) => e.startTime >= cursor && e.startTime < new Date(cursor.getTime() + DAY_MS),
+        (e) => e.startTime >= cursor && e.startTime < dayEnd,
       );
-      const [sh, sm] = settings.dayStartTime.split(":").map(Number);
-      const [eh, em] = settings.dayEndTime.split(":").map(Number);
-      const windowStart = new Date(cursor.getTime() + (sh * 60 + sm) * 60000);
       // Never claim time that hasn't happened yet is "untracked".
-      const windowEnd = capToNow(new Date(cursor.getTime() + (eh * 60 + em) * 60000), now);
-      untrackedSeconds += getUntrackedSeconds(toAnalytics(dayEntries), windowStart, windowEnd);
+      const windowEnd = capToNow(dayEnd, now);
+      untrackedSeconds += getUntrackedSeconds(toAnalytics(dayEntries), cursor, windowEnd);
     }
   }
 
