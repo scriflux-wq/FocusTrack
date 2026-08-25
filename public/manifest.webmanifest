@@ -1,0 +1,17 @@
+{
+  "name": "FocusTrack",
+  "short_name": "FocusTrack",
+  "description": "Tu tiempo, con claridad.",
+  "start_url": "/today",
+  "id": "/today",
+  "display": "standalone",
+  "background_color": "#fafaff",
+  "theme_color": "#6d5df6",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}
