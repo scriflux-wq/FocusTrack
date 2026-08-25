@@ -42,15 +42,15 @@ export function QuickStartBar({ recent }: { recent: RecentActivity[] }) {
 
   return (
     <div className="flex flex-col gap-2.5">
-      <h2 className="text-sm font-medium text-muted-foreground">Inicio rápido</h2>
-      <div className="flex flex-wrap gap-2">
+      <h2 className="text-sm font-semibold">Inicio rápido</h2>
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
         {recent.map((activity) => (
           <button
             key={activity.title}
             type="button"
             disabled={startingTitle !== null}
             onClick={() => quickStart(activity)}
-            className="flex items-center gap-2 rounded-full border border-border bg-card py-1.5 pl-3 pr-2 text-sm font-medium transition-colors hover:bg-secondary disabled:opacity-50"
+            className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-border bg-card py-1.5 pl-3 pr-2 text-sm font-medium transition-colors hover:bg-secondary disabled:opacity-50"
           >
             {activity.categoryColor && <CategoryDot color={activity.categoryColor} />}
             {activity.title}
@@ -62,7 +62,7 @@ export function QuickStartBar({ recent }: { recent: RecentActivity[] }) {
         <button
           type="button"
           onClick={() => setFormOpen(true)}
-          className="flex items-center gap-1.5 rounded-full border border-dashed border-border py-1.5 px-3 text-sm font-medium text-muted-foreground hover:bg-secondary"
+          className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-dashed border-border py-1.5 px-3 text-sm font-medium text-muted-foreground hover:bg-secondary"
         >
           <Plus className="size-4" />
           Nueva

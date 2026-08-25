@@ -31,30 +31,40 @@ export function CalendarHeader({
   const stepDays = view === "day" ? 1 : view === "3day" ? 3 : view === "week" ? 7 : 30;
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="icon" onClick={() => shift(-stepDays)} aria-label="Anterior">
-          <ChevronLeft className="size-4" />
-        </Button>
-        <Button variant="outline" size="icon" onClick={() => shift(stepDays)} aria-label="Siguiente">
-          <ChevronRight className="size-4" />
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => go(view, new Date().toISOString().slice(0, 10))}
-        >
-          Hoy
-        </Button>
-        <h1 className="ml-1 text-lg font-semibold capitalize">{label}</h1>
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-lg font-semibold capitalize">{label}</h1>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => shift(-stepDays)} aria-label="Anterior">
+            <ChevronLeft className="size-4" />
+          </Button>
+          <Button variant="outline" size="icon" onClick={() => shift(stepDays)} aria-label="Siguiente">
+            <ChevronRight className="size-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => go(view, new Date().toISOString().slice(0, 10))}
+          >
+            Hoy
+          </Button>
+        </div>
       </div>
 
       <Tabs value={view} onValueChange={(v) => go(v as CalendarView, dateISO)}>
-        <TabsList>
-          <TabsTrigger value="day">Día</TabsTrigger>
-          <TabsTrigger value="3day">3 días</TabsTrigger>
-          <TabsTrigger value="week">Semana</TabsTrigger>
-          <TabsTrigger value="month">Mes</TabsTrigger>
+        <TabsList className="h-10 w-full rounded-full bg-secondary p-1">
+          <TabsTrigger value="day" className="rounded-full data-active:rounded-full">
+            Día
+          </TabsTrigger>
+          <TabsTrigger value="3day" className="rounded-full data-active:rounded-full">
+            3 días
+          </TabsTrigger>
+          <TabsTrigger value="week" className="rounded-full data-active:rounded-full">
+            Semana
+          </TabsTrigger>
+          <TabsTrigger value="month" className="rounded-full data-active:rounded-full">
+            Mes
+          </TabsTrigger>
         </TabsList>
       </Tabs>
     </div>

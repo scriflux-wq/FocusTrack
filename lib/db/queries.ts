@@ -94,8 +94,11 @@ export async function getFinishedEntriesInRange(
     .orderBy(timeEntries.startTime);
 }
 
-/** The whole-day tracked-time goal, if the user set one (no category/project/activity). */
-export async function getOverallDailyGoalMinutes(userId: string) {
+/** The whole-period tracked-time goal, if the user set one (no category/project/activity). */
+export async function getOverallGoalMinutes(
+  userId: string,
+  period: "daily" | "weekly" | "monthly",
+) {
   const [goal] = await db
     .select({ targetAmount: goals.targetAmount })
     .from(goals)
@@ -103,7 +106,7 @@ export async function getOverallDailyGoalMinutes(userId: string) {
       and(
         eq(goals.userId, userId),
         eq(goals.active, true),
-        eq(goals.period, "daily"),
+        eq(goals.period, period),
         eq(goals.goalType, "hours"),
         isNull(goals.categoryId),
         isNull(goals.projectId),

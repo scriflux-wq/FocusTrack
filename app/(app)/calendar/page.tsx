@@ -1,5 +1,9 @@
 import { getUser } from "@/lib/supabase/server";
-import { getOrCreateSettings, getFinishedEntriesInRange } from "@/lib/db/queries";
+import {
+  getOrCreateSettings,
+  getFinishedEntriesInRange,
+  getOverallGoalMinutes,
+} from "@/lib/db/queries";
 import {
   getDayRange,
   getWeekRange,
@@ -9,6 +13,9 @@ import {
 import { CalendarHeader, type CalendarView } from "@/components/calendar/calendar-header";
 import { CalendarGrid, type DayColumn } from "@/components/calendar/calendar-grid";
 import { MonthGrid, type MonthDay } from "@/components/calendar/month-grid";
+import { WeekSummaryCard } from "@/components/calendar/week-summary-card";
+import { AddEventFab } from "@/components/calendar/add-event-fab";
+import { getTrackedSeconds, getUntrackedSeconds } from "@/lib/analytics/core";
 import { format as formatTz } from "date-fns-tz";
 import { es } from "date-fns/locale";
 import type { TimeEntry } from "@/lib/db/schema";
@@ -72,6 +79,7 @@ export default async function CalendarPage({
           label={currentMonthLabel}
         />
         <MonthGrid weeks={weeks} />
+        <AddEventFab />
       </div>
     );
   }
@@ -111,6 +119,20 @@ export default async function CalendarPage({
           { timeZone: tz, locale: es },
         )}`;
 
+  const weeklyGoalMinutes =
+    view === "week" ? await getOverallGoalMinutes(user.id, "weekly") : null;
+
+  let weeklyUntrackedSeconds = 0;
+  if (view === "week") {
+    const [sh, sm] = settings.dayStartTime.split(":").map(Number);
+    const [eh, em] = settings.dayEndTime.split(":").map(Number);
+    for (const day of days) {
+      const windowStart = new Date(day.dayStart.getTime() + (sh * 60 + sm) * 60000);
+      const windowEnd = new Date(day.dayStart.getTime() + (eh * 60 + em) * 60000);
+      weeklyUntrackedSeconds += getUntrackedSeconds(day.entries, windowStart, windowEnd);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <CalendarHeader
@@ -129,6 +151,16 @@ export default async function CalendarPage({
           />
         </div>
       </div>
+
+      {view === "week" && (
+        <WeekSummaryCard
+          trackedSeconds={getTrackedSeconds(entries)}
+          untrackedSeconds={weeklyUntrackedSeconds}
+          goalMinutes={weeklyGoalMinutes}
+        />
+      )}
+
+      <AddEventFab />
     </div>
   );
 }

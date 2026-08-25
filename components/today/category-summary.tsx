@@ -1,4 +1,4 @@
-import { CategoryDot } from "@/components/ui/category-badge";
+import { CategoryIcon } from "@/components/ui/category-icon";
 import { formatDurationShort } from "@/lib/timer/timer-engine";
 import type { GroupTotal } from "@/lib/analytics/core";
 
@@ -10,23 +10,23 @@ export function CategorySummary({ totals }: { totals: GroupTotal[] }) {
 
   return (
     <div className="flex flex-col gap-2.5">
-      <h2 className="text-sm font-medium text-muted-foreground">Por categoría</h2>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold">Time by Category</h2>
+        <span className="text-xs text-muted-foreground">Today</span>
+      </div>
+      <div className="-mx-4 flex gap-2.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0">
         {totals.slice(0, 8).map((t) => (
           <div
             key={t.key}
-            className="flex flex-col gap-1 rounded-xl border border-border bg-card p-3"
+            className="flex w-32 shrink-0 flex-col gap-2 rounded-2xl border border-border bg-card p-3 sm:w-auto"
           >
-            <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <CategoryDot color={t.color ?? "cat-free"} />
-              {t.label}
-            </span>
-            <span className="text-sm font-semibold">
-              {formatDurationShort(t.seconds)}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {Math.round((t.seconds / grand) * 100)}%
-            </span>
+            <CategoryIcon color={t.color ?? "cat-free"} />
+            <div>
+              <p className="truncate text-sm font-semibold">{t.label}</p>
+              <p className="text-xs text-muted-foreground">
+                {formatDurationShort(t.seconds)} · {Math.round((t.seconds / grand) * 100)}%
+              </p>
+            </div>
           </div>
         ))}
       </div>

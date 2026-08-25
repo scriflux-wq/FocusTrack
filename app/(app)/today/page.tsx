@@ -1,7 +1,9 @@
+import Link from "next/link";
+import { Search } from "lucide-react";
 import { getUser } from "@/lib/supabase/server";
 import {
   getFinishedEntriesInRange,
-  getOverallDailyGoalMinutes,
+  getOverallGoalMinutes,
   getOrCreateSettings,
   getRecentActivities,
   getCategories,
@@ -14,10 +16,12 @@ import {
   getUntrackedSeconds,
 } from "@/lib/analytics/core";
 import { HeroCard } from "@/components/today/hero-card";
+import { QuickActionsRow } from "@/components/today/quick-actions-row";
 import { QuickStartBar } from "@/components/entries/quick-start-bar";
 import { AgendaList } from "@/components/today/agenda-list";
 import { CategorySummary } from "@/components/today/category-summary";
 import { UntrackedBanner } from "@/components/today/untracked-banner";
+import { NotificationsButton } from "@/components/today/notifications-button";
 
 export default async function TodayPage() {
   const user = await getUser();
@@ -32,7 +36,7 @@ export default async function TodayPage() {
   const { start, end } = getDayRange(now, settings.timezone);
   const [entries, dailyGoalMinutes, recent] = await Promise.all([
     getFinishedEntriesInRange(user.id, start, end),
-    getOverallDailyGoalMinutes(user.id),
+    getOverallGoalMinutes(user.id, "daily"),
     getRecentActivities(user.id),
   ]);
 
@@ -45,17 +49,36 @@ export default async function TodayPage() {
   const gaps = getUntrackedRanges(entries, windowStart, windowEnd);
   const untrackedSeconds = getUntrackedSeconds(entries, windowStart, windowEnd);
 
+  const hour = Number(
+    now.toLocaleString("en-US", { timeZone: settings.timezone, hour: "2-digit", hour12: false }),
+  );
+  const greeting = hour < 12 ? "Buenos días" : hour < 20 ? "Buenas tardes" : "Buenas noches";
+
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <p className="text-sm capitalize text-muted-foreground">
-          {formatDayLabel(now, settings.timezone)}
-        </p>
-        <h1 className="text-2xl font-semibold">¡Buenos días! 👋</h1>
-        <p className="text-sm text-muted-foreground">Vamos a aprovechar el día.</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm capitalize text-muted-foreground">
+            {formatDayLabel(now, settings.timezone)}
+          </p>
+          <h1 className="text-2xl font-semibold">{greeting} 👋</h1>
+          <p className="text-sm text-muted-foreground">Vamos a aprovechar el día.</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <Link
+            href="/history"
+            className="flex size-10 items-center justify-center rounded-full border border-border bg-card hover:bg-secondary"
+            aria-label="Buscar"
+          >
+            <Search className="size-4" />
+          </Link>
+          <NotificationsButton />
+        </div>
       </div>
 
       <HeroCard trackedTodaySeconds={trackedSeconds} dailyGoalMinutes={dailyGoalMinutes} />
+
+      <QuickActionsRow />
 
       <QuickStartBar recent={recent} />
 
@@ -67,9 +90,15 @@ export default async function TodayPage() {
       />
 
       <div>
-        <h2 className="mb-2.5 text-sm font-medium text-muted-foreground">
-          Agenda de hoy
-        </h2>
+        <div className="mb-2.5 flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Today&apos;s Plan</h2>
+          <Link
+            href="/calendar?view=day"
+            className="rounded-full border border-border px-3 py-1 text-xs font-medium hover:bg-secondary"
+          >
+            See full day
+          </Link>
+        </div>
         <AgendaList
           entries={entries}
           timezone={settings.timezone}

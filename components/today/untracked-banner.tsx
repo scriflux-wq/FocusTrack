@@ -27,15 +27,23 @@ export function UntrackedBanner({
   if (totalSeconds < 60 || gaps.length === 0) return null;
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-secondary/40 px-4 py-3">
-      <div className="flex items-center gap-2.5 text-sm">
-        <CircleDashed className="size-4 text-muted-foreground" />
-        <span>
-          <span className="font-medium">{formatDurationShort(totalSeconds)}</span>{" "}
-          <span className="text-muted-foreground">sin registrar hoy</span>
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3.5">
+      <div className="flex items-center gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/40 text-muted-foreground">
+          <CircleDashed className="size-4.5" />
         </span>
+        <div>
+          <p className="text-sm font-semibold">Tiempo sin registrar</p>
+          <p className="text-xs text-muted-foreground">
+            {formatDurationShort(totalSeconds)} en tu día
+          </p>
+        </div>
       </div>
-      <Button variant="outline" size="sm" onClick={() => setReviewOpen(true)}>
+      <Button
+        size="sm"
+        className="rounded-full bg-accent text-accent-foreground hover:bg-accent/80"
+        onClick={() => setReviewOpen(true)}
+      >
         Revisar
       </Button>
 

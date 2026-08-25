@@ -24,3 +24,14 @@ export function softChipStyle(color: string): React.CSSProperties {
     color: `var(--${color})`,
   };
 }
+
+/** Default icon per color key, used until a category/project picks its own icon. */
+export const CATEGORY_ICON_BY_COLOR: Record<string, string> = {
+  "cat-work": "Briefcase",
+  "cat-health": "Dumbbell",
+  "cat-projects": "FlaskConical",
+  "cat-learning": "BookOpen",
+  "cat-personal": "Smile",
+  "cat-admin": "ClipboardList",
+  "cat-free": "Coffee",
+};
