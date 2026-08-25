@@ -1,16 +1,7 @@
 import "server-only";
-import { and, desc, eq, gte, ilike, isNull, isNotNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, isNotNull, lt, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import {
-  timeEntries,
-  categories,
-  projects,
-  tags,
-  settings,
-  goals,
-} from "@/lib/db/schema";
-import { getDayRange, getWeekRange, getMonthRange } from "@/lib/calendar/date-utils";
-import { getTrackedSeconds } from "@/lib/analytics/core";
+import { timeEntries, categories, projects, tags, settings } from "@/lib/db/schema";
 
 export async function getActiveTimer(userId: string) {
   const [entry] = await db
@@ -94,29 +85,6 @@ export async function getFinishedEntriesInRange(
     .orderBy(timeEntries.startTime);
 }
 
-/** The whole-period tracked-time goal, if the user set one (no category/project/activity). */
-export async function getOverallGoalMinutes(
-  userId: string,
-  period: "daily" | "weekly" | "monthly",
-) {
-  const [goal] = await db
-    .select({ targetAmount: goals.targetAmount })
-    .from(goals)
-    .where(
-      and(
-        eq(goals.userId, userId),
-        eq(goals.active, true),
-        eq(goals.period, period),
-        eq(goals.goalType, "hours"),
-        isNull(goals.categoryId),
-        isNull(goals.projectId),
-        isNull(goals.activityName),
-      ),
-    )
-    .limit(1);
-  return goal?.targetAmount ?? null;
-}
-
 export async function getRecentEntries(userId: string, limit = 200) {
   return db
     .select()
@@ -124,67 +92,6 @@ export async function getRecentEntries(userId: string, limit = 200) {
     .where(and(eq(timeEntries.userId, userId), isNotNull(timeEntries.endTime)))
     .orderBy(desc(timeEntries.startTime))
     .limit(limit);
-}
-
-export async function getGoalsWithProgress(
-  userId: string,
-  tz: string,
-  weekStartsOn: number,
-) {
-  const goalRows = await db
-    .select()
-    .from(goals)
-    .where(and(eq(goals.userId, userId), eq(goals.active, true)))
-    .orderBy(goals.name);
-
-  const now = new Date();
-
-  return Promise.all(
-    goalRows.map(async (goal) => {
-      const range =
-        goal.period === "daily"
-          ? getDayRange(now, tz)
-          : goal.period === "weekly"
-            ? getWeekRange(now, tz, weekStartsOn)
-            : getMonthRange(now, tz);
-
-      const conditions = [
-        eq(timeEntries.userId, userId),
-        isNotNull(timeEntries.endTime),
-        gte(timeEntries.startTime, range.start),
-        lt(timeEntries.startTime, range.end),
-      ];
-      if (goal.categoryId) conditions.push(eq(timeEntries.categoryId, goal.categoryId));
-      if (goal.projectId) conditions.push(eq(timeEntries.projectId, goal.projectId));
-      if (goal.activityName) conditions.push(ilike(timeEntries.title, goal.activityName));
-
-      const matching = await db
-        .select({
-          durationSeconds: timeEntries.durationSeconds,
-        })
-        .from(timeEntries)
-        .where(and(...conditions));
-
-      const current =
-        goal.goalType === "sessions"
-          ? matching.length
-          : getTrackedSeconds(
-              matching.map((m) => ({
-                id: "",
-                title: "",
-                startTime: now,
-                endTime: now,
-                durationSeconds: m.durationSeconds,
-                categoryId: null,
-                projectId: null,
-              })),
-            ) / 60;
-
-      const percent = goal.targetAmount > 0 ? Math.min(100, Math.round((current / goal.targetAmount) * 100)) : 0;
-
-      return { goal, current, percent };
-    }),
-  );
 }
 
 export async function getOrCreateSettings(userId: string) {

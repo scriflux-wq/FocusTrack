@@ -1,6 +1,6 @@
 import { getUser } from "@/lib/supabase/server";
 import { getFinishedEntriesInRange, getOrCreateSettings } from "@/lib/db/queries";
-import { getDayRange } from "@/lib/calendar/date-utils";
+import { getDayRange, capToNow } from "@/lib/calendar/date-utils";
 import { getUntrackedRanges, getUntrackedSeconds } from "@/lib/analytics/core";
 import { TimerView } from "@/components/timer/timer-view";
 import { AgendaList } from "@/components/today/agenda-list";
@@ -18,7 +18,8 @@ export default async function TimerPage() {
   const [sh, sm] = settings.dayStartTime.split(":").map(Number);
   const [eh, em] = settings.dayEndTime.split(":").map(Number);
   const windowStart = new Date(start.getTime() + (sh * 60 + sm) * 60000);
-  const windowEnd = new Date(start.getTime() + (eh * 60 + em) * 60000);
+  // Never claim time that hasn't happened yet is "untracked".
+  const windowEnd = capToNow(new Date(start.getTime() + (eh * 60 + em) * 60000), now);
   const gaps = getUntrackedRanges(entries, windowStart, windowEnd);
   const untrackedSeconds = getUntrackedSeconds(entries, windowStart, windowEnd);
 

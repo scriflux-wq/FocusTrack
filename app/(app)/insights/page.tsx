@@ -2,7 +2,7 @@ import { format as formatTz } from "date-fns-tz";
 import { es } from "date-fns/locale";
 import { getUser } from "@/lib/supabase/server";
 import { getOrCreateSettings, getFinishedEntriesInRange } from "@/lib/db/queries";
-import { getDayRange, getWeekRange, getMonthRange } from "@/lib/calendar/date-utils";
+import { getDayRange, getWeekRange, getMonthRange, capToNow } from "@/lib/calendar/date-utils";
 import {
   getTrackedSeconds,
   getPeriodComparison,
@@ -72,7 +72,8 @@ export default async function InsightsPage({
       const [sh, sm] = settings.dayStartTime.split(":").map(Number);
       const [eh, em] = settings.dayEndTime.split(":").map(Number);
       const windowStart = new Date(cursor.getTime() + (sh * 60 + sm) * 60000);
-      const windowEnd = new Date(cursor.getTime() + (eh * 60 + em) * 60000);
+      // Never claim time that hasn't happened yet is "untracked".
+      const windowEnd = capToNow(new Date(cursor.getTime() + (eh * 60 + em) * 60000), now);
       untrackedSeconds += getUntrackedSeconds(toAnalytics(dayEntries), windowStart, windowEnd);
     }
   }

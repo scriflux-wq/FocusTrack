@@ -4,7 +4,6 @@ import {
   TimerIcon,
   BarChart3,
   History,
-  Target,
   FolderKanban,
   Settings,
 } from "lucide-react";
@@ -26,7 +25,6 @@ export const primaryNavItems: NavItem[] = [
 /** Extra items: shown in the sidebar directly, and under "More" on mobile. */
 export const secondaryNavItems: NavItem[] = [
   { href: "/history", label: "History", icon: History },
-  { href: "/goals", label: "Goals", icon: Target },
   { href: "/organize", label: "Organize", icon: FolderKanban },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

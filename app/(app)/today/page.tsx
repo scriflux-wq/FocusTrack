@@ -3,12 +3,11 @@ import { Search } from "lucide-react";
 import { getUser } from "@/lib/supabase/server";
 import {
   getFinishedEntriesInRange,
-  getOverallGoalMinutes,
   getOrCreateSettings,
   getRecentActivities,
   getCategories,
 } from "@/lib/db/queries";
-import { getDayRange, formatDayLabel } from "@/lib/calendar/date-utils";
+import { getDayRange, formatDayLabel, capToNow } from "@/lib/calendar/date-utils";
 import {
   getTrackedSeconds,
   getTimeByCategory,
@@ -34,9 +33,8 @@ export default async function TodayPage() {
 
   const now = new Date();
   const { start, end } = getDayRange(now, settings.timezone);
-  const [entries, dailyGoalMinutes, recent] = await Promise.all([
+  const [entries, recent] = await Promise.all([
     getFinishedEntriesInRange(user.id, start, end),
-    getOverallGoalMinutes(user.id, "daily"),
     getRecentActivities(user.id),
   ]);
 
@@ -45,7 +43,8 @@ export default async function TodayPage() {
   const categoryTotals = getTimeByCategory(entries, categoryMap);
 
   const windowStart = clampToToday(start, settings.dayStartTime, settings.timezone);
-  const windowEnd = clampToToday(start, settings.dayEndTime, settings.timezone);
+  // Never claim time that hasn't happened yet is "untracked".
+  const windowEnd = capToNow(clampToToday(start, settings.dayEndTime, settings.timezone), now);
   const gaps = getUntrackedRanges(entries, windowStart, windowEnd);
   const untrackedSeconds = getUntrackedSeconds(entries, windowStart, windowEnd);
 
@@ -76,7 +75,7 @@ export default async function TodayPage() {
         </div>
       </div>
 
-      <HeroCard trackedTodaySeconds={trackedSeconds} dailyGoalMinutes={dailyGoalMinutes} />
+      <HeroCard trackedTodaySeconds={trackedSeconds} />
 
       <QuickActionsRow />
 

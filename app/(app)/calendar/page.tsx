@@ -1,14 +1,11 @@
 import { getUser } from "@/lib/supabase/server";
-import {
-  getOrCreateSettings,
-  getFinishedEntriesInRange,
-  getOverallGoalMinutes,
-} from "@/lib/db/queries";
+import { getOrCreateSettings, getFinishedEntriesInRange } from "@/lib/db/queries";
 import {
   getDayRange,
   getWeekRange,
   getMonthRange,
   formatDayLabel,
+  capToNow,
 } from "@/lib/calendar/date-utils";
 import { CalendarHeader, type CalendarView } from "@/components/calendar/calendar-header";
 import { CalendarGrid, type DayColumn } from "@/components/calendar/calendar-grid";
@@ -119,16 +116,15 @@ export default async function CalendarPage({
           { timeZone: tz, locale: es },
         )}`;
 
-  const weeklyGoalMinutes =
-    view === "week" ? await getOverallGoalMinutes(user.id, "weekly") : null;
-
   let weeklyUntrackedSeconds = 0;
   if (view === "week") {
+    const now = new Date();
     const [sh, sm] = settings.dayStartTime.split(":").map(Number);
     const [eh, em] = settings.dayEndTime.split(":").map(Number);
     for (const day of days) {
       const windowStart = new Date(day.dayStart.getTime() + (sh * 60 + sm) * 60000);
-      const windowEnd = new Date(day.dayStart.getTime() + (eh * 60 + em) * 60000);
+      // Never claim time that hasn't happened yet is "untracked".
+      const windowEnd = capToNow(new Date(day.dayStart.getTime() + (eh * 60 + em) * 60000), now);
       weeklyUntrackedSeconds += getUntrackedSeconds(day.entries, windowStart, windowEnd);
     }
   }
@@ -156,7 +152,6 @@ export default async function CalendarPage({
         <WeekSummaryCard
           trackedSeconds={getTrackedSeconds(entries)}
           untrackedSeconds={weeklyUntrackedSeconds}
-          goalMinutes={weeklyGoalMinutes}
         />
       )}
 

@@ -2,22 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Play, CalendarPlus, CalendarDays, PencilLine } from "lucide-react";
+import { Play, PencilLine, CalendarDays } from "lucide-react";
 import { EntryFormSheet } from "@/components/entries/entry-form-sheet";
 
 type SheetState = { mode: "timer" | "manual"; start?: Date; end?: Date } | null;
 
 const ACTIONS = [
   { key: "timer", label: "Start Timer", icon: Play, color: "cat-projects" },
-  { key: "block", label: "Add Block", icon: CalendarPlus, color: "cat-work" },
-  { key: "week", label: "Plan Week", icon: CalendarDays, color: "cat-health" },
   { key: "log", label: "Log Activity", icon: PencilLine, color: "cat-learning" },
+  { key: "week", label: "Plan Week", icon: CalendarDays, color: "cat-health" },
 ] as const;
-
-function nextHourBlock() {
-  const start = new Date(Date.now() + 60 * 60 * 1000);
-  return { start, end: new Date(start.getTime() + 60 * 60 * 1000) };
-}
 
 function lastHalfHour() {
   const end = new Date();
@@ -31,17 +25,13 @@ export function QuickActionsRow() {
   function handleClick(key: (typeof ACTIONS)[number]["key"]) {
     if (key === "timer") return setSheet({ mode: "timer" });
     if (key === "week") return router.push("/calendar?view=week");
-    if (key === "block") {
-      const { start, end } = nextHourBlock();
-      return setSheet({ mode: "manual", start, end });
-    }
     // "log": just-finished activity, defaults to the last 30 minutes.
     const { start, end } = lastHalfHour();
     return setSheet({ mode: "manual", start, end });
   }
 
   return (
-    <div className="grid grid-cols-4 gap-2.5">
+    <div className="grid grid-cols-3 gap-2.5">
       {ACTIONS.map((action) => (
         <button
           key={action.key}

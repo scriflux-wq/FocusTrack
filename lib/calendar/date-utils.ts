@@ -53,6 +53,11 @@ export function formatTime(date: Date, tz: string, timeFormat: string): string {
   });
 }
 
+/** Never treat time after `now` as elapsed — used to keep "untracked time" from counting the future. */
+export function capToNow(date: Date, now: Date): Date {
+  return date.getTime() > now.getTime() ? now : date;
+}
+
 export function formatDayLabel(date: Date, tz: string): string {
   return formatTz(date, "EEEE, d MMM", { timeZone: tz, locale: es });
 }
