@@ -73,7 +73,7 @@ export default async function CalendarPage({
           dateISO={referenceDate.toISOString().slice(0, 10)}
           label={currentMonthLabel}
         />
-        <MonthGrid weeks={weeks} />
+        <MonthGrid weeks={weeks} timezone={tz} />
         <AddEventFab />
       </div>
     );
