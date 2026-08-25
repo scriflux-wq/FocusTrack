@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { cache } from "react";
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -27,11 +28,16 @@ export async function createClient() {
   );
 }
 
-/** Returns the current authenticated user, or null. */
-export async function getUser() {
+/**
+ * Returns the current authenticated user, or null. Wrapped in React's
+ * `cache()` so the (app) layout and every page can call this freely
+ * without each one paying for its own round trip to Supabase's Auth
+ * server — they all share one verified result per request.
+ */
+export const getUser = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   return user;
-}
+});

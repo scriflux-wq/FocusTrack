@@ -6,7 +6,6 @@ import {
   getProjects,
   getTags,
 } from "@/lib/db/queries";
-import { ensureDefaultCategories } from "@/lib/db/bootstrap";
 import { AppShell } from "@/components/layout/app-shell";
 import { TimerHydrator } from "@/components/timer/timer-hydrator";
 import { TimerFab } from "@/components/timer/timer-fab";
@@ -19,8 +18,6 @@ export default async function AppLayout({
 }) {
   const user = await getUser();
   if (!user) redirect("/login");
-
-  await ensureDefaultCategories(user.id);
 
   const [active, categories, projects, tags] = await Promise.all([
     getActiveTimer(user.id),
