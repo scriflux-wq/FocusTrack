@@ -25,8 +25,6 @@ const WEEKDAYS = [
 export function SettingsView({ settings }: { settings: Settings }) {
   const [timezone, setTimezone] = useState(settings.timezone);
   const [weekStartsOn, setWeekStartsOn] = useState(String(settings.weekStartsOn));
-  const [dayStartTime, setDayStartTime] = useState(settings.dayStartTime);
-  const [dayEndTime, setDayEndTime] = useState(settings.dayEndTime);
   const [timeFormat, setTimeFormat] = useState(settings.timeFormat);
   const [defaultCalendarView, setDefaultCalendarView] = useState(
     settings.defaultCalendarView,
@@ -40,8 +38,6 @@ export function SettingsView({ settings }: { settings: Settings }) {
         await updateSettings({
           timezone,
           weekStartsOn: Number(weekStartsOn),
-          dayStartTime,
-          dayEndTime,
           timeFormat: timeFormat as "24h" | "12h",
           defaultCalendarView: defaultCalendarView as
             | "day"
@@ -85,27 +81,6 @@ export function SettingsView({ settings }: { settings: Settings }) {
               ))}
             </SelectContent>
           </Select>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="day-start">Inicio del día</Label>
-            <Input
-              id="day-start"
-              type="time"
-              value={dayStartTime}
-              onChange={(e) => setDayStartTime(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="day-end">Fin del día</Label>
-            <Input
-              id="day-end"
-              type="time"
-              value={dayEndTime}
-              onChange={(e) => setDayEndTime(e.target.value)}
-            />
-          </div>
         </div>
 
         <div className="flex flex-col gap-1.5">

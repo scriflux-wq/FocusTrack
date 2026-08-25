@@ -30,8 +30,6 @@ export default async function CalendarPage({
   const view = (params.view as CalendarView) ?? settings.defaultCalendarView;
   const referenceDate = params.date ? new Date(params.date + "T12:00:00Z") : new Date();
   const tz = settings.timezone;
-  const [startHour] = settings.dayStartTime.split(":").map(Number);
-  const [endHour] = settings.dayEndTime.split(":").map(Number);
 
   if (view === "month") {
     const { start } = getMonthRange(referenceDate, tz);
@@ -139,8 +137,8 @@ export default async function CalendarPage({
         <div style={{ minWidth: dayCount > 1 ? 640 : undefined }}>
           <CalendarGrid
             days={days}
-            dayStartHour={startHour}
-            dayEndHour={endHour}
+            dayStartHour={0}
+            dayEndHour={24}
             timezone={tz}
             timeFormat={settings.timeFormat}
           />
