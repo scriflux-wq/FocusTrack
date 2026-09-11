@@ -1,16 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Play, PencilLine, CalendarDays } from "lucide-react";
+import { Play, PencilLine, BarChart3 } from "lucide-react";
 import { EntryFormSheet } from "@/components/entries/entry-form-sheet";
 
 type SheetState = { mode: "timer" | "manual"; start?: Date; end?: Date } | null;
 
 const ACTIONS = [
-  { key: "timer", label: "Start Timer", icon: Play, color: "cat-projects" },
-  { key: "log", label: "Log Activity", icon: PencilLine, color: "cat-learning" },
-  { key: "week", label: "Plan Week", icon: CalendarDays, color: "cat-health" },
+  { key: "timer", label: "Start Timer", sub: "Registra tu tiempo", icon: Play, color: "cat-projects" },
+  { key: "log", label: "Log Activity", sub: "Añade lo que hiciste", icon: PencilLine, color: "cat-learning" },
+  { key: "gaps", label: "Review Gaps", sub: "Revisa lo que falta", icon: BarChart3, color: "cat-work" },
 ] as const;
 
 function lastHalfHour() {
@@ -18,13 +17,12 @@ function lastHalfHour() {
   return { start: new Date(end.getTime() - 30 * 60 * 1000), end };
 }
 
-export function QuickActionsRow() {
-  const router = useRouter();
+export function QuickActionsRow({ onReviewGaps }: { onReviewGaps: () => void }) {
   const [sheet, setSheet] = useState<SheetState>(null);
 
   function handleClick(key: (typeof ACTIONS)[number]["key"]) {
     if (key === "timer") return setSheet({ mode: "timer" });
-    if (key === "week") return router.push("/calendar?view=week");
+    if (key === "gaps") return onReviewGaps();
     // "log": just-finished activity, defaults to the last 30 minutes.
     const { start, end } = lastHalfHour();
     return setSheet({ mode: "manual", start, end });
@@ -37,16 +35,21 @@ export function QuickActionsRow() {
           key={action.key}
           type="button"
           onClick={() => handleClick(action.key)}
-          className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card py-3.5 hover:bg-secondary/60"
+          className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card py-4 hover:bg-secondary/60"
         >
           <span
-            className="flex size-10 items-center justify-center rounded-2xl"
+            className="flex size-10 items-center justify-center rounded-full"
             style={{ backgroundColor: `var(--${action.color}-soft)`, color: `var(--${action.color})` }}
           >
             <action.icon className="size-4.5" />
           </span>
-          <span className="text-center text-[11px] font-medium leading-tight text-foreground">
-            {action.label}
+          <span className="text-center">
+            <span className="block text-[12px] font-semibold leading-tight text-foreground">
+              {action.label}
+            </span>
+            <span className="block text-[10px] leading-tight text-muted-foreground">
+              {action.sub}
+            </span>
           </span>
         </button>
       ))}

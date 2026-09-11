@@ -12,6 +12,9 @@ import { CalendarGrid, type DayColumn } from "@/components/calendar/calendar-gri
 import { MonthGrid, type MonthDay } from "@/components/calendar/month-grid";
 import { WeekSummaryCard } from "@/components/calendar/week-summary-card";
 import { AddEventFab } from "@/components/calendar/add-event-fab";
+import { MiniMonthCalendar } from "@/components/calendar/mini-month-calendar";
+import { DayDetailPanel } from "@/components/calendar/day-detail-panel";
+import { QuoteCard } from "@/components/ui/quote-card";
 import { getTrackedSeconds, getUntrackedSeconds } from "@/lib/analytics/core";
 import { format as formatTz } from "date-fns-tz";
 import { es } from "date-fns/locale";
@@ -29,7 +32,9 @@ export default async function CalendarPage({
   const params = await searchParams;
   const view = (params.view as CalendarView) ?? settings.defaultCalendarView;
   const referenceDate = params.date ? new Date(params.date + "T12:00:00Z") : new Date();
+  const referenceDateISO = referenceDate.toISOString().slice(0, 10);
   const tz = settings.timezone;
+  const { start: selectedDayStart, end: selectedDayEnd } = getDayRange(referenceDate, tz);
 
   if (view === "month") {
     const { start } = getMonthRange(referenceDate, tz);
@@ -37,6 +42,9 @@ export default async function CalendarPage({
     const gridStart = getWeekRange(start, tz, settings.weekStartsOn).start;
     const gridEnd = new Date(gridStart.getTime() + 42 * 24 * 60 * 60 * 1000);
     const entries = await getFinishedEntriesInRange(user.id, gridStart, gridEnd);
+    const selectedDayEntries = entries.filter(
+      (e) => e.startTime >= selectedDayStart && e.startTime < selectedDayEnd,
+    );
 
     const currentMonthLabel = formatTz(referenceDate, "MMMM yyyy", { timeZone: tz, locale: es });
     const todayStart = getDayRange(new Date(), tz).start;
@@ -67,13 +75,24 @@ export default async function CalendarPage({
     }
 
     return (
-      <div className="flex flex-col gap-4">
-        <CalendarHeader
-          view={view}
-          dateISO={referenceDate.toISOString().slice(0, 10)}
-          label={currentMonthLabel}
-        />
-        <MonthGrid weeks={weeks} timezone={tz} />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
+        <div className="flex flex-col gap-4">
+          <CalendarHeader
+            view={view}
+            dateISO={referenceDateISO}
+            label={currentMonthLabel}
+          />
+          <MonthGrid weeks={weeks} timezone={tz} />
+        </div>
+        <div className="hidden flex-col gap-4 lg:flex">
+          <DayDetailPanel
+            label={formatDayLabel(referenceDate, tz)}
+            entries={selectedDayEntries}
+            timezone={tz}
+            timeFormat={settings.timeFormat}
+          />
+          <QuoteCard seed={1} />
+        </div>
         <AddEventFab />
       </div>
     );
@@ -104,6 +123,9 @@ export default async function CalendarPage({
     );
     if (col) col.entries.push(entry);
   }
+  const selectedDayEntries = entries.filter(
+    (e) => e.startTime >= selectedDayStart && e.startTime < selectedDayEnd,
+  );
 
   const label =
     view === "day"
@@ -127,30 +149,42 @@ export default async function CalendarPage({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <CalendarHeader
-        view={view}
-        dateISO={referenceDate.toISOString().slice(0, 10)}
-        label={label}
-      />
-      <div className="overflow-x-auto">
-        <div style={{ minWidth: dayCount > 1 ? 640 : undefined }}>
-          <CalendarGrid
-            days={days}
-            dayStartHour={0}
-            dayEndHour={24}
-            timezone={tz}
-            timeFormat={settings.timeFormat}
-          />
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
+      <div className="flex flex-col gap-4">
+        <CalendarHeader view={view} dateISO={referenceDateISO} label={label} />
+        <div className="overflow-x-auto">
+          <div style={{ minWidth: dayCount > 1 ? 640 : undefined }}>
+            <CalendarGrid
+              days={days}
+              dayStartHour={0}
+              dayEndHour={24}
+              timezone={tz}
+              timeFormat={settings.timeFormat}
+            />
+          </div>
         </div>
+
+        {view === "week" && (
+          <WeekSummaryCard
+            trackedSeconds={getTrackedSeconds(entries)}
+            untrackedSeconds={weeklyUntrackedSeconds}
+          />
+        )}
       </div>
 
-      {view === "week" && (
-        <WeekSummaryCard
-          trackedSeconds={getTrackedSeconds(entries)}
-          untrackedSeconds={weeklyUntrackedSeconds}
+      <div className="hidden flex-col gap-4 lg:flex">
+        <MiniMonthCalendar
+          referenceDateISO={referenceDateISO}
+          weekStartsOn={settings.weekStartsOn}
         />
-      )}
+        <DayDetailPanel
+          label={formatDayLabel(referenceDate, tz)}
+          entries={selectedDayEntries}
+          timezone={tz}
+          timeFormat={settings.timeFormat}
+        />
+        <QuoteCard seed={2} />
+      </div>
 
       <AddEventFab />
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, ChevronRight } from "lucide-react";
+import { Plus, ChevronRight, Sparkle } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { CategoryDot } from "@/components/ui/category-badge";
@@ -19,7 +19,10 @@ export function OrganizeView() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">Organize</h1>
+      <h1 className="flex items-center gap-2 font-serif text-2xl font-semibold">
+        <Sparkle className="size-4 text-primary" />
+        Organize
+      </h1>
 
       <Tabs defaultValue="categories">
         <TabsList>

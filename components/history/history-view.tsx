@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Sparkle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CategoryDot } from "@/components/ui/category-badge";
+import { CategoryIcon } from "@/components/ui/category-icon";
 import { EntryFormSheet } from "@/components/entries/entry-form-sheet";
+import { QuickLogRow } from "./quick-log-row";
 import { useOrganize } from "@/components/providers/organize-provider";
 import { formatDurationShort } from "@/lib/timer/timer-engine";
 import { formatTime } from "@/lib/calendar/date-utils";
@@ -15,13 +16,15 @@ export function HistoryView({
   entries,
   timezone,
   timeFormat,
+  initialQuery = "",
 }: {
   entries: TimeEntry[];
   timezone: string;
   timeFormat: string;
+  initialQuery?: string;
 }) {
   const { categories, projects } = useOrganize();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [editing, setEditing] = useState<TimeEntry | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -57,12 +60,20 @@ export function HistoryView({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">History</h1>
-        <Button onClick={() => setCreating(true)}>
+        <div>
+          <h1 className="flex items-center gap-2 font-serif text-2xl font-semibold">
+            <Sparkle className="size-4 text-primary" />
+            Activity Log
+          </h1>
+          <p className="text-sm text-muted-foreground">A record of your time.</p>
+        </div>
+        <Button variant="outline" onClick={() => setCreating(true)} className="rounded-full">
           <Plus className="size-4" />
-          Nueva sesión
+          Más opciones
         </Button>
       </div>
+
+      <QuickLogRow />
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -75,7 +86,7 @@ export function HistoryView({
       </div>
 
       {grouped.length === 0 && (
-        <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+        <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           No hay sesiones que coincidan.
         </p>
       )}
@@ -83,7 +94,7 @@ export function HistoryView({
       {grouped.map(([day, dayEntries]) => (
         <div key={day} className="flex flex-col gap-2">
           <h2 className="text-sm font-medium capitalize text-muted-foreground">{day}</h2>
-          <ul className="flex flex-col divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
+          <ul className="flex flex-col divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
             {dayEntries.map((entry) => {
               const category = categories.find((c) => c.id === entry.categoryId);
               const project = projects.find((p) => p.id === entry.projectId);
@@ -94,17 +105,13 @@ export function HistoryView({
                     onClick={() => setEditing(entry)}
                     className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-secondary/60"
                   >
-                    <span className="w-12 shrink-0 text-xs text-muted-foreground tabular-nums">
-                      {formatTime(entry.startTime, timezone, timeFormat)}
-                    </span>
-                    <CategoryDot color={category?.color ?? "cat-free"} />
+                    <CategoryIcon color={category?.color ?? "cat-free"} className="size-9" />
                     <span className="flex-1 truncate">
-                      <span className="font-medium">{entry.title}</span>
-                      {project && (
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          {project.name}
-                        </span>
-                      )}
+                      <span className="block font-medium">{entry.title}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {formatTime(entry.startTime, timezone, timeFormat)}
+                        {project && ` · ${project.name}`}
+                      </span>
                     </span>
                     <span className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium">
                       {formatDurationShort(entry.durationSeconds ?? 0)}

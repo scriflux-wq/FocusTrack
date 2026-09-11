@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Sparkle } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatCard } from "./stat-card";
 import { DonutChart } from "@/components/charts/donut-chart";
@@ -95,7 +95,10 @@ export function InsightsView({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Insights</h1>
+        <h1 className="flex items-center gap-2 font-serif text-2xl font-semibold">
+          <Sparkle className="size-4 text-primary" />
+          Insights
+        </h1>
         <Tabs value={period} onValueChange={(v) => router.push(`/insights?period=${v}`)}>
           <TabsList>
             <TabsTrigger value="today">Hoy</TabsTrigger>
@@ -126,7 +129,7 @@ export function InsightsView({
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
+        <div className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-4">
           <div className="flex items-center gap-2">
             {(drillCategory || drillProject) && (
               <button
@@ -158,7 +161,7 @@ export function InsightsView({
           </ul>
         </div>
 
-        <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
+        <div className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-4">
           <h2 className="text-sm font-medium text-muted-foreground">Evolución</h2>
           <EvolutionChart data={dailyTotals} />
           <p className="text-xs text-muted-foreground">

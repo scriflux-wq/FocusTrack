@@ -26,6 +26,7 @@ type TimerStore = {
   activeEntry: ActiveTimerEntry | null;
   pending: boolean;
   setActiveEntry: (entry: ActiveTimerEntry | null) => void;
+  patchActive: (patch: Partial<ActiveTimerEntry>) => void;
   start: (input: {
     title: string;
     categoryId?: string | null;
@@ -44,6 +45,8 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
   pending: false,
 
   setActiveEntry: (entry) => set({ activeEntry: entry }),
+  patchActive: (patch) =>
+    set((s) => (s.activeEntry ? { activeEntry: { ...s.activeEntry, ...patch } } : s)),
 
   start: async (input) => {
     set({ pending: true });

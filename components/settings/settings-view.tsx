@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Download, LogOut } from "lucide-react";
+import { Download, LogOut, Sparkle } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,7 +54,10 @@ export function SettingsView({ settings }: { settings: Settings }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">Settings</h1>
+      <h1 className="flex items-center gap-2 font-serif text-2xl font-semibold">
+        <Sparkle className="size-4 text-primary" />
+        Settings
+      </h1>
 
       <form onSubmit={handleSubmit} className="flex max-w-md flex-col gap-4">
         <div className="flex flex-col gap-1.5">

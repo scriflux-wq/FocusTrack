@@ -3,8 +3,9 @@ import { getFinishedEntriesInRange, getOrCreateSettings } from "@/lib/db/queries
 import { getDayRange, capToNow } from "@/lib/calendar/date-utils";
 import { getUntrackedRanges, getUntrackedSeconds } from "@/lib/analytics/core";
 import { TimerView } from "@/components/timer/timer-view";
+import { TimerMetadataEditor } from "@/components/timer/timer-metadata-editor";
 import { AgendaList } from "@/components/today/agenda-list";
-import { UntrackedBanner } from "@/components/today/untracked-banner";
+import { GapReviewController } from "@/components/today/gap-review-controller";
 
 export default async function TimerPage() {
   const user = await getUser();
@@ -22,23 +23,28 @@ export default async function TimerPage() {
   const untrackedSeconds = getUntrackedSeconds(entries, start, windowEnd);
 
   return (
-    <div className="flex flex-col gap-6">
-      <TimerView />
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
+      <div className="flex flex-col gap-6">
+        <TimerView timezone={settings.timezone} timeFormat={settings.timeFormat} />
 
-      <UntrackedBanner
-        gaps={gaps}
-        totalSeconds={untrackedSeconds}
-        timezone={settings.timezone}
-        timeFormat={settings.timeFormat}
-      />
-
-      <div>
-        <h2 className="mb-2.5 text-sm font-semibold">Today&apos;s Sessions</h2>
-        <AgendaList
-          entries={entries}
+        <GapReviewController
+          gaps={gaps}
+          totalSeconds={untrackedSeconds}
           timezone={settings.timezone}
           timeFormat={settings.timeFormat}
         />
+      </div>
+
+      <div className="flex flex-col gap-4">
+        <TimerMetadataEditor />
+        <div>
+          <h2 className="mb-2.5 text-sm font-semibold">Today&apos;s Sessions</h2>
+          <AgendaList
+            entries={entries}
+            timezone={settings.timezone}
+            timeFormat={settings.timeFormat}
+          />
+        </div>
       </div>
     </div>
   );

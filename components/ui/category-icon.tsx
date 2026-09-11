@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 type IconName = keyof typeof Icons;
 
-/** Icon rendered in a soft rounded square, tinted by category/project color. */
+/** Icon rendered in a soft circle, tinted by category/project color. */
 export function CategoryIcon({
   color,
   icon,
@@ -22,7 +22,7 @@ export function CategoryIcon({
   return (
     <span
       className={cn(
-        "flex size-10 shrink-0 items-center justify-center rounded-2xl",
+        "flex size-10 shrink-0 items-center justify-center rounded-full",
         className,
       )}
       style={{

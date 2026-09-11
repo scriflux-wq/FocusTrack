@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { primaryNavItems, secondaryNavItems } from "./nav-items";
+import { MoreMenuContent } from "./more-menu-content";
 import {
   Drawer,
   DrawerContent,
@@ -13,7 +14,6 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { signOut } from "@/lib/actions/auth";
 import { useTimerStore } from "@/lib/timer/use-timer-store";
 
 export function BottomNav() {
@@ -68,31 +68,8 @@ export function BottomNav() {
             <DrawerHeader>
               <DrawerTitle>Más</DrawerTitle>
             </DrawerHeader>
-            <div className="flex flex-col gap-1 px-4 pb-6">
-              {secondaryNavItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMoreOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium",
-                    isActive(item.href)
-                      ? "bg-accent text-accent-foreground"
-                      : "text-foreground hover:bg-secondary",
-                  )}
-                >
-                  <item.icon className="size-4" />
-                  {item.label}
-                </Link>
-              ))}
-              <form action={signOut}>
-                <button
-                  type="submit"
-                  className="mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary"
-                >
-                  Cerrar sesión
-                </button>
-              </form>
+            <div className="px-4 pb-6">
+              <MoreMenuContent onNavigate={() => setMoreOpen(false)} />
             </div>
           </DrawerContent>
         </Drawer>

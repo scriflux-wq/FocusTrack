@@ -26,12 +26,17 @@ export function HeroCard({ trackedTodaySeconds }: { trackedTodaySeconds: number 
   const liveTotal = trackedTodaySeconds + (entry ? elapsed : 0);
 
   return (
-    <div className="rounded-3xl bg-primary p-5 text-primary-foreground">
+    <div
+      className="rounded-3xl border border-border p-5"
+      style={{
+        backgroundImage: `linear-gradient(135deg, var(--glow-1), var(--glow-2) 55%, var(--card) 100%)`,
+      }}
+    >
       <div className="mb-4 flex items-center justify-between">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-primary-foreground/70">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-foreground/60">
           Current focus
         </span>
-        <span className="flex size-7 items-center justify-center rounded-full bg-white/15">
+        <span className="flex size-7 items-center justify-center rounded-full bg-white/70 text-primary">
           <Target className="size-3.5" />
         </span>
       </div>
@@ -44,14 +49,14 @@ export function HeroCard({ trackedTodaySeconds }: { trackedTodaySeconds: number 
               cy={RING_SIZE / 2}
               r={RADIUS}
               strokeWidth={STROKE}
-              className="fill-none stroke-white/20"
+              className="fill-none stroke-white/60"
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-bold tabular-nums">
+            <span className="text-2xl font-bold tabular-nums text-foreground">
               {formatDurationShort(liveTotal)}
             </span>
-            <span className="text-[10px] text-primary-foreground/70">registrado hoy</span>
+            <span className="text-[10px] text-foreground/60">registrado hoy</span>
           </div>
         </div>
 
@@ -59,18 +64,19 @@ export function HeroCard({ trackedTodaySeconds }: { trackedTodaySeconds: number 
           {entry ? (
             <>
               <div className="min-w-0">
-                <p className="flex items-center gap-1.5 text-base font-semibold">
+                <p className="flex items-center gap-1.5 text-base font-semibold text-foreground">
                   <CategoryDot color={entry.categoryColor ?? "cat-free"} className="size-2.5" />
                   <span className="min-w-0 truncate">{entry.title}</span>
                 </p>
                 {entry.projectName && (
-                  <p className="truncate text-xs text-primary-foreground/70">
-                    {entry.projectName}
-                  </p>
+                  <p className="truncate text-xs text-foreground/60">{entry.projectName}</p>
                 )}
               </div>
-              <div className="flex items-center justify-between gap-2 rounded-full bg-white/15 py-1.5 pl-3 pr-1.5">
-                <Link href="/timer" className="font-mono text-sm font-semibold tabular-nums">
+              <div className="flex items-center justify-between gap-2 rounded-full bg-white/70 py-1.5 pl-3 pr-1.5">
+                <Link
+                  href="/timer"
+                  className="font-mono text-sm font-semibold tabular-nums text-foreground"
+                >
                   {formatDurationClock(elapsed)}
                 </Link>
                 <div className="flex items-center gap-1">
@@ -78,7 +84,7 @@ export function HeroCard({ trackedTodaySeconds }: { trackedTodaySeconds: number 
                     type="button"
                     disabled={pending}
                     onClick={() => (entry.pausedAt ? resume() : pause())}
-                    className="flex size-7 items-center justify-center rounded-full bg-white/20 hover:bg-white/30 disabled:opacity-50"
+                    className="flex size-7 items-center justify-center rounded-full bg-white text-foreground hover:opacity-80 disabled:opacity-50"
                     aria-label={entry.pausedAt ? "Continuar" : "Pausar"}
                   >
                     {entry.pausedAt ? <Play className="size-3.5" /> : <Pause className="size-3.5" />}
@@ -87,7 +93,7 @@ export function HeroCard({ trackedTodaySeconds }: { trackedTodaySeconds: number 
                     type="button"
                     disabled={pending}
                     onClick={() => finish()}
-                    className="flex size-7 items-center justify-center rounded-full bg-white text-primary hover:opacity-90 disabled:opacity-50"
+                    className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
                     aria-label="Finalizar"
                   >
                     <Square className="size-3 fill-current" />
@@ -97,11 +103,11 @@ export function HeroCard({ trackedTodaySeconds }: { trackedTodaySeconds: number 
             </>
           ) : (
             <>
-              <p className="text-sm text-primary-foreground/70">Nada en marcha ahora mismo</p>
+              <p className="text-sm text-foreground/60">Nada en marcha ahora mismo</p>
               <button
                 type="button"
                 onClick={() => setStartOpen(true)}
-                className="flex items-center justify-center gap-1.5 rounded-full bg-white py-2 text-sm font-semibold text-primary hover:bg-white/90"
+                className="flex items-center justify-center gap-1.5 rounded-full bg-primary py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
               >
                 <Play className="size-3.5 fill-current" />
                 Iniciar timer

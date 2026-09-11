@@ -29,7 +29,7 @@ export default async function AppLayout({
   return (
     <OrganizeProvider value={{ categories, projects, tags }}>
       <TimerHydrator initial={active} />
-      <AppShell>{children}</AppShell>
+      <AppShell userEmail={user.email ?? null}>{children}</AppShell>
       <TimerFab />
     </OrganizeProvider>
   );
