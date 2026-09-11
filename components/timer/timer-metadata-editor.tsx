@@ -28,7 +28,7 @@ export function TimerMetadataEditor() {
   const activeEntry = entry;
 
   function handleCategoryChange(value: string | null) {
-    if (!value || value === "none") return;
+    if (!value) return;
     const categoryId = value;
     const category = categories.find((c) => c.id === categoryId);
     patchActive({
@@ -70,7 +70,6 @@ export function TimerMetadataEditor() {
               <SelectValue placeholder="Sin categoría" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">Sin categoría</SelectItem>
               {categories.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   <CategoryDot color={c.color} />
