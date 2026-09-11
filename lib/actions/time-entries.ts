@@ -19,8 +19,8 @@ async function requireUserId() {
 
 const entryInput = z.object({
   title: z.string().trim().min(1, "El nombre es obligatorio").max(120),
-  categoryId: z.string().uuid().nullable().optional(),
-  projectId: z.string().uuid().nullable().optional(),
+  categoryId: z.string().uuid({ message: "La categoría es obligatoria" }),
+  subcategoryId: z.string().uuid().nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
   tagNames: z.array(z.string().trim().min(1).max(40)).optional(),
 });
@@ -73,8 +73,8 @@ export async function startTimer(rawInput: z.infer<typeof entryInput>) {
       userId,
       title: input.title,
       startTime: new Date(),
-      categoryId: input.categoryId ?? null,
-      projectId: input.projectId ?? null,
+      categoryId: input.categoryId,
+      subcategoryId: input.subcategoryId ?? null,
       notes: input.notes ?? null,
       source: "timer",
     })
@@ -196,8 +196,8 @@ export async function createManualEntry(
       startTime: input.startTime,
       endTime: input.endTime,
       durationSeconds,
-      categoryId: input.categoryId ?? null,
-      projectId: input.projectId ?? null,
+      categoryId: input.categoryId,
+      subcategoryId: input.subcategoryId ?? null,
       notes: input.notes ?? null,
       source: "manual",
     })
@@ -242,8 +242,10 @@ export async function updateEntry(rawInput: z.infer<typeof updateEntryInput>) {
         : existing.durationSeconds,
       categoryId:
         input.categoryId !== undefined ? input.categoryId : existing.categoryId,
-      projectId:
-        input.projectId !== undefined ? input.projectId : existing.projectId,
+      subcategoryId:
+        input.subcategoryId !== undefined
+          ? input.subcategoryId
+          : existing.subcategoryId,
       notes: input.notes !== undefined ? input.notes : existing.notes,
       updatedAt: new Date(),
     })

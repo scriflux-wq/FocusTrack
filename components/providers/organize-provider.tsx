@@ -1,11 +1,11 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { Category, Project, Tag } from "@/lib/db/schema";
+import type { Category, Subcategory, Tag } from "@/lib/db/schema";
 
 type OrganizeContextValue = {
   categories: Category[];
-  projects: Project[];
+  subcategories: Subcategory[];
   tags: Tag[];
 };
 

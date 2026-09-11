@@ -22,18 +22,24 @@ export function CalendarHeader({
     router.push(`/calendar?view=${nextView}&date=${nextDateISO}`);
   }
 
+  /** Local calendar date — toISOString() would report the UTC day and jump a day after midnight. */
+  function localISO(d: Date) {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
   function shift(days: number) {
     const d = new Date(dateISO + "T12:00:00");
     d.setDate(d.getDate() + days);
-    go(view, d.toISOString().slice(0, 10));
+    go(view, localISO(d));
   }
 
   const stepDays = view === "day" ? 1 : view === "3day" ? 3 : view === "week" ? 7 : 30;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex shrink-0 flex-col gap-2 sm:gap-3">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-lg font-semibold capitalize">{label}</h1>
+        <h1 className="truncate font-serif text-base font-semibold capitalize sm:text-lg">{label}</h1>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={() => shift(-stepDays)} aria-label="Anterior">
             <ChevronLeft className="size-4" />
@@ -44,7 +50,7 @@ export function CalendarHeader({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => go(view, new Date().toISOString().slice(0, 10))}
+            onClick={() => go(view, localISO(new Date()))}
           >
             Hoy
           </Button>
@@ -52,7 +58,7 @@ export function CalendarHeader({
       </div>
 
       <Tabs value={view} onValueChange={(v) => go(v as CalendarView, dateISO)}>
-        <TabsList className="h-10 w-full rounded-full bg-secondary p-1">
+        <TabsList className="h-9 w-full rounded-full bg-secondary p-1 sm:h-10">
           <TabsTrigger value="day" className="rounded-full data-active:rounded-full">
             Día
           </TabsTrigger>

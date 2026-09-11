@@ -20,7 +20,7 @@ import { updateEntry } from "@/lib/actions/time-entries";
 export function TimerMetadataEditor() {
   const entry = useTimerStore((s) => s.activeEntry);
   const patchActive = useTimerStore((s) => s.patchActive);
-  const { categories, projects } = useOrganize();
+  const { categories, subcategories } = useOrganize();
   const [note, setNote] = useState("");
   const [, startTransition] = useTransition();
 
@@ -28,7 +28,8 @@ export function TimerMetadataEditor() {
   const activeEntry = entry;
 
   function handleCategoryChange(value: string | null) {
-    const categoryId = !value || value === "none" ? null : value;
+    if (!value || value === "none") return;
+    const categoryId = value;
     const category = categories.find((c) => c.id === categoryId);
     patchActive({
       categoryId,
@@ -81,13 +82,13 @@ export function TimerMetadataEditor() {
         </div>
       </div>
 
-      {entry.projectId && (
+      {entry.subcategoryId && (
         <div className="flex items-center gap-3 rounded-xl bg-secondary/50 px-3 py-2">
           <FolderKanban className="size-4 text-muted-foreground" />
           <div className="flex-1">
-            <p className="text-[11px] text-muted-foreground">Project</p>
+            <p className="text-[11px] text-muted-foreground">Subcategoría</p>
             <p className="text-sm font-medium">
-              {projects.find((p) => p.id === entry.projectId)?.name ?? "—"}
+              {subcategories.find((s) => s.id === entry.subcategoryId)?.name ?? "—"}
             </p>
           </div>
         </div>

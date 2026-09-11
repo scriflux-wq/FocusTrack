@@ -105,6 +105,32 @@ export const projects = pgTable(
   (t) => [index("projects_user_idx").on(t.userId)],
 );
 
+/**
+ * Optional second level under a category ("Trabajo" -> "McDonalds"). Colour is
+ * inherited from the parent category so insights drill-downs stay coherent.
+ */
+export const subcategories = pgTable(
+  "subcategories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("subcategories_user_idx").on(t.userId),
+    index("subcategories_category_idx").on(t.categoryId),
+  ],
+);
+
 export const tags = pgTable(
   "tags",
   {
@@ -161,6 +187,9 @@ export const timeEntries = pgTable(
     totalPausedSeconds: integer("total_paused_seconds").notNull().default(0),
     durationSeconds: integer("duration_seconds"), // set on finish
     categoryId: uuid("category_id").references(() => categories.id, {
+      onDelete: "set null",
+    }),
+    subcategoryId: uuid("subcategory_id").references(() => subcategories.id, {
       onDelete: "set null",
     }),
     projectId: uuid("project_id").references(() => projects.id, {
@@ -291,6 +320,8 @@ export type Category = typeof categories.$inferSelect;
 export type NewCategory = typeof categories.$inferInsert;
 export type Project = typeof projects.$inferSelect;
 export type NewProject = typeof projects.$inferInsert;
+export type Subcategory = typeof subcategories.$inferSelect;
+export type NewSubcategory = typeof subcategories.$inferInsert;
 export type Tag = typeof tags.$inferSelect;
 export type TimeEntry = typeof timeEntries.$inferSelect;
 export type NewTimeEntry = typeof timeEntries.$inferInsert;

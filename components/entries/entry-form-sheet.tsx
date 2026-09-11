@@ -50,7 +50,7 @@ export function EntryFormSheet({
   defaultEnd?: Date;
   defaultTitle?: string;
 }) {
-  const { categories, projects } = useOrganize();
+  const { categories, subcategories } = useOrganize();
   const startTimerAction = useTimerStore((s) => s.start);
   const [pending, startTransition] = useTransition();
   const isEdit = Boolean(entry);
@@ -64,11 +64,11 @@ export function EntryFormSheet({
       entry?.endTime ?? defaultEnd ?? new Date(Date.now() + 30 * 60 * 1000),
     ),
   );
-  const [categoryId, setCategoryId] = useState<string | null>(
-    entry?.categoryId ?? null,
+  const [categoryId, setCategoryId] = useState<string>(
+    entry?.categoryId ?? categories[0]?.id ?? "",
   );
-  const [projectId, setProjectId] = useState<string | null>(
-    entry?.projectId ?? null,
+  const [subcategoryId, setSubcategoryId] = useState<string | null>(
+    entry?.subcategoryId ?? null,
   );
   const [notes, setNotes] = useState(entry?.notes ?? "");
   const [tagsText, setTagsText] = useState("");
@@ -76,8 +76,8 @@ export function EntryFormSheet({
 
   function reset() {
     setTitle("");
-    setCategoryId(null);
-    setProjectId(null);
+    setCategoryId(categories[0]?.id ?? "");
+    setSubcategoryId(null);
     setNotes("");
     setTagsText("");
     setShowMore(false);
@@ -90,9 +90,25 @@ export function EntryFormSheet({
       .filter(Boolean);
   }
 
+  /** Subcategories are scoped to the chosen category, and always optional. */
+  const available = subcategories.filter((s) => s.categoryId === categoryId);
+
+  function pickCategory(next: string) {
+    setCategoryId(next);
+    setSubcategoryId((current) =>
+      subcategories.some((s) => s.id === current && s.categoryId === next)
+        ? current
+        : null,
+    );
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
+    if (!categoryId) {
+      toast.error("Elige una categoría");
+      return;
+    }
 
     startTransition(async () => {
       try {
@@ -103,7 +119,7 @@ export function EntryFormSheet({
             startTime: new Date(startTime),
             endTime: new Date(endTime),
             categoryId,
-            projectId,
+            subcategoryId,
             notes: notes || null,
             tagNames: tagNames(),
           });
@@ -112,7 +128,7 @@ export function EntryFormSheet({
           await startTimerAction({
             title,
             categoryId,
-            projectId,
+            subcategoryId,
             notes: notes || null,
             tagNames: tagNames(),
           });
@@ -123,7 +139,7 @@ export function EntryFormSheet({
             startTime: new Date(startTime),
             endTime: new Date(endTime),
             categoryId,
-            projectId,
+            subcategoryId,
             notes: notes || null,
             tagNames: tagNames(),
           });
@@ -189,6 +205,45 @@ export function EntryFormSheet({
           </div>
         )}
 
+        <div className="flex flex-col gap-1.5">
+          <Label>Categoría</Label>
+          <Select value={categoryId} onValueChange={(v) => pickCategory(v ?? "")}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Elige una categoría" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  <CategoryDot color={c.color} />
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {available.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <Label>Subcategoría (opcional)</Label>
+            <Select
+              value={subcategoryId ?? "none"}
+              onValueChange={(v) => setSubcategoryId(!v || v === "none" ? null : v)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Sin subcategoría" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sin subcategoría</SelectItem>
+                {available.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={() => setShowMore((v) => !v)}
@@ -202,48 +257,6 @@ export function EntryFormSheet({
 
         {showMore && (
           <div className="flex flex-col gap-4 rounded-xl bg-secondary/50 p-3">
-            <div className="flex flex-col gap-1.5">
-              <Label>Categoría</Label>
-              <Select
-                value={categoryId ?? "none"}
-                onValueChange={(v) => setCategoryId(v === "none" ? null : v)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Sin categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sin categoría</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      <CategoryDot color={c.color} />
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label>Proyecto</Label>
-              <Select
-                value={projectId ?? "none"}
-                onValueChange={(v) => setProjectId(v === "none" ? null : v)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Sin proyecto" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sin proyecto</SelectItem>
-                  {projects.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      <CategoryDot color={p.color} />
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="entry-tags">Etiquetas</Label>
               <Input

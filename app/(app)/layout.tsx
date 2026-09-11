@@ -3,7 +3,7 @@ import { getUser } from "@/lib/supabase/server";
 import {
   getActiveTimer,
   getCategories,
-  getProjects,
+  getSubcategories,
   getTags,
 } from "@/lib/db/queries";
 import { AppShell } from "@/components/layout/app-shell";
@@ -19,15 +19,15 @@ export default async function AppLayout({
   const user = await getUser();
   if (!user) redirect("/login");
 
-  const [active, categories, projects, tags] = await Promise.all([
+  const [active, categories, subcategories, tags] = await Promise.all([
     getActiveTimer(user.id),
     getCategories(user.id),
-    getProjects(user.id),
+    getSubcategories(user.id),
     getTags(user.id),
   ]);
 
   return (
-    <OrganizeProvider value={{ categories, projects, tags }}>
+    <OrganizeProvider value={{ categories, subcategories, tags }}>
       <TimerHydrator initial={active} />
       <AppShell userEmail={user.email ?? null}>{children}</AppShell>
       <TimerFab />

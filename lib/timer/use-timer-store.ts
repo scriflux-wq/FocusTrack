@@ -16,10 +16,10 @@ export type ActiveTimerEntry = {
   pausedAt: Date | null;
   totalPausedSeconds: number;
   categoryId: string | null;
-  projectId: string | null;
+  subcategoryId: string | null;
   categoryName: string | null;
   categoryColor: string | null;
-  projectName: string | null;
+  subcategoryName: string | null;
 };
 
 type TimerStore = {
@@ -29,8 +29,8 @@ type TimerStore = {
   patchActive: (patch: Partial<ActiveTimerEntry>) => void;
   start: (input: {
     title: string;
-    categoryId?: string | null;
-    projectId?: string | null;
+    categoryId: string;
+    subcategoryId?: string | null;
     notes?: string | null;
     tagNames?: string[];
   }) => Promise<void>;
@@ -60,10 +60,10 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
           pausedAt: entry.pausedAt,
           totalPausedSeconds: entry.totalPausedSeconds,
           categoryId: entry.categoryId,
-          projectId: entry.projectId,
+          subcategoryId: entry.subcategoryId,
           categoryName: null,
           categoryColor: null,
-          projectName: null,
+          subcategoryName: null,
         },
       });
     } finally {

@@ -17,7 +17,7 @@ export function AgendaList({
   timezone: string;
   timeFormat: string;
 }) {
-  const { categories, projects } = useOrganize();
+  const { categories, subcategories } = useOrganize();
   const [editing, setEditing] = useState<TimeEntry | null>(null);
 
   if (entries.length === 0) {
@@ -33,7 +33,7 @@ export function AgendaList({
       <ol className="flex flex-col rounded-2xl border border-border bg-card px-4 py-3">
         {entries.map((entry, i) => {
           const category = categories.find((c) => c.id === entry.categoryId);
-          const project = projects.find((p) => p.id === entry.projectId);
+          const subcategory = subcategories.find((s) => s.id === entry.subcategoryId);
           const color = category?.color ?? "cat-free";
           const isLast = i === entries.length - 1;
 
@@ -61,7 +61,7 @@ export function AgendaList({
                 <span className="min-w-0">
                   <span className="block truncate font-medium">{entry.title}</span>
                   <span className="block truncate text-xs text-muted-foreground">
-                    {project?.name ?? category?.name ?? "Sin categoría"}
+                    {subcategory?.name ?? category?.name ?? "Sin categoría"}
                   </span>
                 </span>
                 <span

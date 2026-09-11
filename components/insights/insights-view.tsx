@@ -9,6 +9,7 @@ import { DonutChart } from "@/components/charts/donut-chart";
 import { EvolutionChart } from "@/components/charts/evolution-chart";
 import { CategoryDot } from "@/components/ui/category-badge";
 import { useOrganize } from "@/components/providers/organize-provider";
+import { CATEGORY_COLOR_OPTIONS } from "@/lib/categories";
 import { formatDurationShort } from "@/lib/timer/timer-engine";
 import {
   getTrackedSeconds,
@@ -39,17 +40,29 @@ export function InsightsView({
   untrackedSeconds: number;
 }) {
   const router = useRouter();
-  const { categories, projects } = useOrganize();
+  const { categories, subcategories } = useOrganize();
   const [drillCategory, setDrillCategory] = useState<string | null>(null);
-  const [drillProject, setDrillProject] = useState<string | null>(null);
+  const [drillSubcategory, setDrillSubcategory] = useState<string | null>(null);
 
   const categoryMap = useMemo(
     () => new Map(categories.map((c) => [c.id, { name: c.name, color: c.color }])),
     [categories],
   );
-  const projectMap = useMemo(
-    () => new Map(projects.map((p) => [p.id, { name: p.name, color: p.color }])),
-    [projects],
+  // Subcategory slices get distinct palette colours: they only ever appear
+  // together inside one category, where the shared parent colour would make
+  // every slice identical.
+  const subcategoryMap = useMemo(
+    () =>
+      new Map(
+        subcategories.map((s, i) => [
+          s.id,
+          {
+            name: s.name,
+            color: CATEGORY_COLOR_OPTIONS[i % CATEGORY_COLOR_OPTIONS.length].value,
+          },
+        ]),
+      ),
+    [subcategories],
   );
 
   const total = getTrackedSeconds(entries);
@@ -58,37 +71,48 @@ export function InsightsView({
 
   let donutData: GroupTotal[];
   let breadcrumb: string[] = [];
+  let drillable = true;
 
-  if (drillCategory && drillProject) {
+  if (drillCategory && drillSubcategory) {
     const scoped = entries.filter(
-      (e) => e.categoryId === drillCategory && e.projectId === drillProject,
+      (e) => e.categoryId === drillCategory && e.subcategoryId === drillSubcategory,
     );
     donutData = getTimeByActivity(scoped);
+    drillable = false;
     breadcrumb = [
       categoryMap.get(drillCategory)?.name ?? "—",
-      projectMap.get(drillProject)?.name ?? "—",
+      subcategoryMap.get(drillSubcategory)?.name ?? "—",
     ];
   } else if (drillCategory) {
     const scoped = entries.filter((e) => e.categoryId === drillCategory);
-    donutData = groupBySeconds(
-      scoped,
-      (e) => e.projectId ?? "none",
-      (key) => (key === "none" ? "Sin proyecto" : (projectMap.get(key)?.name ?? "—")),
-      (key) => (key === "none" ? "cat-free" : projectMap.get(key)?.color),
-    );
+    const hasSubcategories = scoped.some((e) => e.subcategoryId);
+    // Subcategories are optional, so a category without them drills straight
+    // through to its individual activities instead of a dead "Sin subcategoría".
+    if (hasSubcategories) {
+      donutData = groupBySeconds(
+        scoped,
+        (e) => e.subcategoryId ?? "none",
+        (key) =>
+          key === "none" ? "Sin subcategoría" : (subcategoryMap.get(key)?.name ?? "—"),
+        (key) => (key === "none" ? "cat-free" : subcategoryMap.get(key)?.color),
+      );
+    } else {
+      donutData = getTimeByActivity(scoped);
+      drillable = false;
+    }
     breadcrumb = [categoryMap.get(drillCategory)?.name ?? "—"];
   } else {
     donutData = getTimeByCategory(entries, categoryMap);
   }
 
   function handleSliceClick(key: string) {
-    if (key === "none") return;
+    if (key === "none" || !drillable) return;
     if (!drillCategory) setDrillCategory(key);
-    else if (!drillProject) setDrillProject(key);
+    else setDrillSubcategory(key);
   }
 
   function goBack() {
-    if (drillProject) setDrillProject(null);
+    if (drillSubcategory) setDrillSubcategory(null);
     else setDrillCategory(null);
   }
 
@@ -131,7 +155,7 @@ export function InsightsView({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-4">
           <div className="flex items-center gap-2">
-            {(drillCategory || drillProject) && (
+            {(drillCategory || drillSubcategory) && (
               <button
                 type="button"
                 onClick={goBack}

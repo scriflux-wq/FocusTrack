@@ -16,7 +16,7 @@ function entry(
     id: crypto.randomUUID(),
     title: "Test",
     categoryId: null,
-    projectId: null,
+    subcategoryId: null,
     durationSeconds: (partial.endTime.getTime() - partial.startTime.getTime()) / 1000,
     ...partial,
   };

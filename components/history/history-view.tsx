@@ -23,7 +23,7 @@ export function HistoryView({
   timeFormat: string;
   initialQuery?: string;
 }) {
-  const { categories, projects } = useOrganize();
+  const { categories, subcategories } = useOrganize();
   const [query, setQuery] = useState(initialQuery);
   const [editing, setEditing] = useState<TimeEntry | null>(null);
   const [creating, setCreating] = useState(false);
@@ -32,15 +32,15 @@ export function HistoryView({
     const q = query.trim().toLowerCase();
     if (!q) return entries;
     return entries.filter((e) => {
-      const project = projects.find((p) => p.id === e.projectId);
+      const subcategory = subcategories.find((s) => s.id === e.subcategoryId);
       const category = categories.find((c) => c.id === e.categoryId);
       return (
         e.title.toLowerCase().includes(q) ||
-        project?.name.toLowerCase().includes(q) ||
+        subcategory?.name.toLowerCase().includes(q) ||
         category?.name.toLowerCase().includes(q)
       );
     });
-  }, [entries, query, projects, categories]);
+  }, [entries, query, subcategories, categories]);
 
   const grouped = useMemo(() => {
     const groups = new Map<string, TimeEntry[]>();
@@ -97,7 +97,7 @@ export function HistoryView({
           <ul className="flex flex-col divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
             {dayEntries.map((entry) => {
               const category = categories.find((c) => c.id === entry.categoryId);
-              const project = projects.find((p) => p.id === entry.projectId);
+              const subcategory = subcategories.find((s) => s.id === entry.subcategoryId);
               return (
                 <li key={entry.id}>
                   <button
@@ -110,7 +110,7 @@ export function HistoryView({
                       <span className="block font-medium">{entry.title}</span>
                       <span className="block text-xs text-muted-foreground">
                         {formatTime(entry.startTime, timezone, timeFormat)}
-                        {project && ` · ${project.name}`}
+                        {subcategory && ` · ${subcategory.name}`}
                       </span>
                     </span>
                     <span className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium">

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 type IconName = keyof typeof Icons;
 
-/** Icon rendered in a soft circle, tinted by category/project color. */
+/** Icon rendered in a soft circle, tinted by category color. */
 export function CategoryIcon({
   color,
   icon,

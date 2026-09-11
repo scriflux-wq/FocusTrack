@@ -68,8 +68,8 @@ export function HeroCard({ trackedTodaySeconds }: { trackedTodaySeconds: number 
                   <CategoryDot color={entry.categoryColor ?? "cat-free"} className="size-2.5" />
                   <span className="min-w-0 truncate">{entry.title}</span>
                 </p>
-                {entry.projectName && (
-                  <p className="truncate text-xs text-foreground/60">{entry.projectName}</p>
+                {entry.subcategoryName && (
+                  <p className="truncate text-xs text-foreground/60">{entry.subcategoryName}</p>
                 )}
               </div>
               <div className="flex items-center justify-between gap-2 rounded-full bg-white/70 py-1.5 pl-3 pr-1.5">

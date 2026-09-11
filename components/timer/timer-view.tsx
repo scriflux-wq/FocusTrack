@@ -25,11 +25,11 @@ export function TimerView({
   const finish = useTimerStore((s) => s.finish);
   const discard = useTimerStore((s) => s.discard);
   const elapsed = useElapsedSeconds(entry);
-  const { categories, projects } = useOrganize();
+  const { categories, subcategories } = useOrganize();
   const [startOpen, setStartOpen] = useState(false);
 
   const category = categories.find((c) => c.id === entry?.categoryId);
-  const project = projects.find((p) => p.id === entry?.projectId);
+  const subcategory = subcategories.find((s) => s.id === entry?.subcategoryId);
   const paused = entry?.pausedAt != null;
   const progress = entry ? Math.min(1, (elapsed % 3600) / 3600) : 0;
 
@@ -78,7 +78,7 @@ export function TimerView({
                     {category.name}
                   </span>
                 )}
-                {project && <span>· {project.name}</span>}
+                {subcategory && <span>· {subcategory.name}</span>}
               </div>
             </div>
           )}

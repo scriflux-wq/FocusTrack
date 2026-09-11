@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { timeEntries, categories, projects } from "@/lib/db/schema";
+import { timeEntries, categories, subcategories } from "@/lib/db/schema";
 import { getUser } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
@@ -18,13 +18,13 @@ export async function GET(request: NextRequest) {
       endTime: timeEntries.endTime,
       durationSeconds: timeEntries.durationSeconds,
       category: categories.name,
-      project: projects.name,
+      subcategory: subcategories.name,
       notes: timeEntries.notes,
       source: timeEntries.source,
     })
     .from(timeEntries)
     .leftJoin(categories, eq(timeEntries.categoryId, categories.id))
-    .leftJoin(projects, eq(timeEntries.projectId, projects.id))
+    .leftJoin(subcategories, eq(timeEntries.subcategoryId, subcategories.id))
     .where(eq(timeEntries.userId, user.id))
     .orderBy(timeEntries.startTime);
 
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     "end_time",
     "duration_seconds",
     "category",
-    "project",
+    "subcategory",
     "notes",
     "source",
   ];
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
         r.endTime?.toISOString() ?? "",
         r.durationSeconds ?? "",
         r.category ?? "",
-        r.project ?? "",
+        r.subcategory ?? "",
         r.notes ?? "",
         r.source,
       ]

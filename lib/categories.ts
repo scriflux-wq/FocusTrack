@@ -1,5 +1,5 @@
 /**
- * Category/project colors are stored as the base CSS custom-property name
+ * Category colors are stored as the base CSS custom-property name
  * (e.g. "cat-work"), which always has a matching "<name>-soft" pastel
  * variant defined in globals.css. Using inline styles (not Tailwind
  * classes) means new color keys never need a JIT safelist update.
@@ -25,7 +25,7 @@ export function softChipStyle(color: string): React.CSSProperties {
   };
 }
 
-/** Default icon per color key, used until a category/project picks its own icon. */
+/** Default icon per color key, used until a category picks its own icon. */
 export const CATEGORY_ICON_BY_COLOR: Record<string, string> = {
   "cat-work": "Briefcase",
   "cat-health": "Dumbbell",

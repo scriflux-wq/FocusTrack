@@ -1,7 +1,13 @@
 import "server-only";
 import { and, desc, eq, gte, isNull, isNotNull, lt, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { timeEntries, categories, projects, tags, settings } from "@/lib/db/schema";
+import {
+  timeEntries,
+  categories,
+  subcategories,
+  tags,
+  settings,
+} from "@/lib/db/schema";
 
 export async function getActiveTimer(userId: string) {
   const [entry] = await db
@@ -12,14 +18,14 @@ export async function getActiveTimer(userId: string) {
       pausedAt: timeEntries.pausedAt,
       totalPausedSeconds: timeEntries.totalPausedSeconds,
       categoryId: timeEntries.categoryId,
-      projectId: timeEntries.projectId,
+      subcategoryId: timeEntries.subcategoryId,
       categoryName: categories.name,
       categoryColor: categories.color,
-      projectName: projects.name,
+      subcategoryName: subcategories.name,
     })
     .from(timeEntries)
     .leftJoin(categories, eq(timeEntries.categoryId, categories.id))
-    .leftJoin(projects, eq(timeEntries.projectId, projects.id))
+    .leftJoin(subcategories, eq(timeEntries.subcategoryId, subcategories.id))
     .where(and(eq(timeEntries.userId, userId), isNull(timeEntries.endTime)));
 
   return entry ?? null;
@@ -33,25 +39,25 @@ export async function getCategories(userId: string) {
     .orderBy(categories.name);
 }
 
-export async function getProjects(userId: string) {
+export async function getSubcategories(userId: string) {
   return db
     .select()
-    .from(projects)
-    .where(and(eq(projects.userId, userId), sql`${projects.status} != 'archived'`))
-    .orderBy(projects.name);
+    .from(subcategories)
+    .where(eq(subcategories.userId, userId))
+    .orderBy(subcategories.name);
 }
 
 export async function getTags(userId: string) {
   return db.select().from(tags).where(eq(tags.userId, userId)).orderBy(tags.name);
 }
 
-/** Distinct recent activity "recipes" (title + category + project) for Quick Start. */
+/** Distinct recent activity "recipes" (title + category + subcategory) for Quick Start. */
 export async function getRecentActivities(userId: string, limit = 6) {
   const rows = await db
     .selectDistinctOn([timeEntries.title], {
       title: timeEntries.title,
       categoryId: timeEntries.categoryId,
-      projectId: timeEntries.projectId,
+      subcategoryId: timeEntries.subcategoryId,
       categoryColor: categories.color,
       lastUsed: timeEntries.startTime,
     })

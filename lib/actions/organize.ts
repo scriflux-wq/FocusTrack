@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db/client";
-import { categories, projects } from "@/lib/db/schema";
+import { categories, subcategories } from "@/lib/db/schema";
 import { getUser } from "@/lib/supabase/server";
 
 async function requireUserId() {
@@ -53,43 +53,40 @@ export async function archiveCategory(id: string) {
   revalidatePath("/", "layout");
 }
 
-const projectInput = z.object({
+const subcategoryInput = z.object({
   name: z.string().trim().min(1).max(60),
-  categoryId: z.string().uuid().nullable().optional(),
-  color: z.string().min(1),
-  icon: z.string().optional().nullable(),
-  status: z.enum(["active", "paused", "completed", "archived"]).optional(),
+  categoryId: z.string().uuid(),
 });
 
-export async function createProject(raw: z.infer<typeof projectInput>) {
+export async function createSubcategory(raw: z.infer<typeof subcategoryInput>) {
   const userId = await requireUserId();
-  const input = projectInput.parse(raw);
-  const [project] = await db
-    .insert(projects)
+  const input = subcategoryInput.parse(raw);
+  const [subcategory] = await db
+    .insert(subcategories)
     .values({ userId, ...input })
     .returning();
   revalidatePath("/", "layout");
-  return project;
+  return subcategory;
 }
 
-export async function updateProject(
+export async function updateSubcategory(
   id: string,
-  raw: Partial<z.infer<typeof projectInput>>,
+  raw: Partial<z.infer<typeof subcategoryInput>>,
 ) {
   const userId = await requireUserId();
-  const input = projectInput.partial().parse(raw);
+  const input = subcategoryInput.partial().parse(raw);
   await db
-    .update(projects)
+    .update(subcategories)
     .set({ ...input, updatedAt: new Date() })
-    .where(and(eq(projects.id, id), eq(projects.userId, userId)));
+    .where(and(eq(subcategories.id, id), eq(subcategories.userId, userId)));
   revalidatePath("/", "layout");
 }
 
-export async function archiveProject(id: string) {
+/** Entries keep their category; their subcategory_id is nulled by the FK. */
+export async function deleteSubcategory(id: string) {
   const userId = await requireUserId();
   await db
-    .update(projects)
-    .set({ status: "archived", updatedAt: new Date() })
-    .where(and(eq(projects.id, id), eq(projects.userId, userId)));
+    .delete(subcategories)
+    .where(and(eq(subcategories.id, id), eq(subcategories.userId, userId)));
   revalidatePath("/", "layout");
 }

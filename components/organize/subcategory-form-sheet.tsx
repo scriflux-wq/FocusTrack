@@ -14,41 +14,45 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CATEGORY_COLOR_OPTIONS } from "@/lib/categories";
-import { createProject, updateProject, archiveProject } from "@/lib/actions/organize";
+import {
+  createSubcategory,
+  updateSubcategory,
+  deleteSubcategory,
+} from "@/lib/actions/organize";
 import { useOrganize } from "@/components/providers/organize-provider";
-import type { Project } from "@/lib/db/schema";
-import { cn } from "@/lib/utils";
+import type { Subcategory } from "@/lib/db/schema";
 
-export function ProjectFormSheet({
+export function SubcategoryFormSheet({
   open,
   onOpenChange,
-  project,
+  subcategory,
+  defaultCategoryId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  project?: Project;
+  subcategory?: Subcategory;
+  defaultCategoryId?: string;
 }) {
   const { categories } = useOrganize();
-  const [name, setName] = useState(project?.name ?? "");
-  const [color, setColor] = useState(project?.color ?? "cat-projects");
-  const [categoryId, setCategoryId] = useState<string | null>(
-    project?.categoryId ?? null,
+  const [name, setName] = useState(subcategory?.name ?? "");
+  const [categoryId, setCategoryId] = useState(
+    subcategory?.categoryId ?? defaultCategoryId ?? categories[0]?.id ?? "",
   );
   const [pending, startTransition] = useTransition();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || !categoryId) return;
     startTransition(async () => {
       try {
-        if (project) {
-          await updateProject(project.id, { name, color, categoryId });
-          toast.success("Proyecto actualizado");
+        if (subcategory) {
+          await updateSubcategory(subcategory.id, { name, categoryId });
+          toast.success("Subcategoría actualizada");
         } else {
-          await createProject({ name, color, categoryId });
-          toast.success("Proyecto creado");
+          await createSubcategory({ name, categoryId });
+          toast.success("Subcategoría creada");
         }
+        setName("");
         onOpenChange(false);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Algo salió mal");
@@ -60,31 +64,28 @@ export function ProjectFormSheet({
     <ResponsiveSheet
       open={open}
       onOpenChange={onOpenChange}
-      title={project ? "Editar proyecto" : "Nuevo proyecto"}
+      title={subcategory ? "Editar subcategoría" : "Nueva subcategoría"}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 pt-2">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="proj-name">Nombre</Label>
+          <Label htmlFor="sub-name">Nombre</Label>
           <Input
-            id="proj-name"
+            id="sub-name"
             autoFocus
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Mario Perfume, Scriflux…"
+            placeholder="McDonalds, Profesor de matemáticas…"
             required
           />
         </div>
+
         <div className="flex flex-col gap-1.5">
-          <Label>Categoría (opcional)</Label>
-          <Select
-            value={categoryId ?? "none"}
-            onValueChange={(v) => setCategoryId(v === "none" ? null : v)}
-          >
+          <Label>Categoría</Label>
+          <Select value={categoryId} onValueChange={(v) => setCategoryId(v ?? "")}>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Sin categoría" />
+              <SelectValue placeholder="Elige una categoría" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">Sin categoría</SelectItem>
               {categories.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   <CategoryDot color={c.color} />
@@ -93,42 +94,27 @@ export function ProjectFormSheet({
               ))}
             </SelectContent>
           </Select>
+          <p className="text-xs text-muted-foreground">
+            Hereda el color de su categoría.
+          </p>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Label>Color</Label>
-          <div className="flex flex-wrap gap-2">
-            {CATEGORY_COLOR_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setColor(opt.value)}
-                className={cn(
-                  "flex size-9 items-center justify-center rounded-full border-2",
-                  color === opt.value ? "border-foreground" : "border-transparent",
-                )}
-                aria-label={opt.label}
-              >
-                <CategoryDot color={opt.value} className="size-5" />
-              </button>
-            ))}
-          </div>
-        </div>
+
         <div className="mt-1 flex items-center gap-2">
-          {project && (
+          {subcategory && (
             <Button
               type="button"
               variant="ghost"
               disabled={pending}
               onClick={() =>
                 startTransition(async () => {
-                  await archiveProject(project.id);
-                  toast.success("Proyecto archivado");
+                  await deleteSubcategory(subcategory.id);
+                  toast.success("Subcategoría eliminada");
                   onOpenChange(false);
                 })
               }
               className="text-destructive hover:text-destructive"
             >
-              Archivar
+              Eliminar
             </Button>
           )}
           <Button type="submit" disabled={pending} className="flex-1">

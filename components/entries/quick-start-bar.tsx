@@ -10,7 +10,7 @@ import { useTimerStore } from "@/lib/timer/use-timer-store";
 export type RecentActivity = {
   title: string;
   categoryId: string | null;
-  projectId: string | null;
+  subcategoryId: string | null;
   categoryColor: string | null;
 };
 
@@ -19,10 +19,17 @@ export function QuickStartBar({ recent }: { recent: RecentActivity[] }) {
   const start = useTimerStore((s) => s.start);
   const [formOpen, setFormOpen] = useState(false);
   const [startingTitle, setStartingTitle] = useState<string | null>(null);
+  const [prefillTitle, setPrefillTitle] = useState<string | undefined>();
 
   async function quickStart(activity: RecentActivity) {
     if (activeEntry) {
       toast.error("Ya hay una sesión en marcha. Finalízala primero.");
+      return;
+    }
+    // Older entries predate the category requirement; let the form collect one.
+    if (!activity.categoryId) {
+      setPrefillTitle(activity.title);
+      setFormOpen(true);
       return;
     }
     setStartingTitle(activity.title);
@@ -30,7 +37,7 @@ export function QuickStartBar({ recent }: { recent: RecentActivity[] }) {
       await start({
         title: activity.title,
         categoryId: activity.categoryId,
-        projectId: activity.projectId,
+        subcategoryId: activity.subcategoryId,
       });
       toast.success(`Timer iniciado: ${activity.title}`);
     } catch (err) {
@@ -61,7 +68,10 @@ export function QuickStartBar({ recent }: { recent: RecentActivity[] }) {
         ))}
         <button
           type="button"
-          onClick={() => setFormOpen(true)}
+          onClick={() => {
+            setPrefillTitle(undefined);
+            setFormOpen(true);
+          }}
           className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-dashed border-border py-1.5 px-3 text-sm font-medium text-muted-foreground hover:bg-secondary"
         >
           <Plus className="size-4" />
@@ -69,7 +79,13 @@ export function QuickStartBar({ recent }: { recent: RecentActivity[] }) {
         </button>
       </div>
 
-      <EntryFormSheet open={formOpen} onOpenChange={setFormOpen} mode="timer" />
+      <EntryFormSheet
+        key={prefillTitle ?? "new"}
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        mode="timer"
+        defaultTitle={prefillTitle}
+      />
     </div>
   );
 }

@@ -11,7 +11,7 @@ export type AnalyticsEntry = {
   endTime: Date | null;
   durationSeconds: number | null;
   categoryId: string | null;
-  projectId: string | null;
+  subcategoryId: string | null;
 };
 
 function seconds(e: AnalyticsEntry): number {
@@ -24,7 +24,7 @@ export function getTrackedSeconds(entries: AnalyticsEntry[]): number {
 
 export type GroupTotal = { key: string; label: string; seconds: number; color?: string };
 
-/** Groups entries by an arbitrary key (category id, project id, or title). */
+/** Groups entries by an arbitrary key (category id, subcategory id, or title). */
 export function groupBySeconds(
   entries: AnalyticsEntry[],
   keyFn: (e: AnalyticsEntry) => string,

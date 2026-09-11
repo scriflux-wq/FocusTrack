@@ -1,8 +1,12 @@
-import { format as formatTz } from "date-fns-tz";
-import { es } from "date-fns/locale";
 import { getUser } from "@/lib/supabase/server";
 import { getOrCreateSettings, getFinishedEntriesInRange } from "@/lib/db/queries";
-import { getDayRange, getWeekRange, getMonthRange, capToNow } from "@/lib/calendar/date-utils";
+import {
+  getDayRange,
+  getWeekRange,
+  getMonthRange,
+  capToNow,
+  formatInZone,
+} from "@/lib/calendar/date-utils";
 import {
   getTrackedSeconds,
   getPeriodComparison,
@@ -110,7 +114,7 @@ function toAnalytics(entries: TimeEntry[]) {
     endTime: e.endTime,
     durationSeconds: e.durationSeconds,
     categoryId: e.categoryId,
-    projectId: e.projectId,
+    subcategoryId: e.subcategoryId,
   }));
 }
 
@@ -124,7 +128,7 @@ function buildBuckets(period: Period, start: Date, end: Date, tz: string) {
       buckets.push({
         start: cursor,
         end: next,
-        label: formatTz(cursor, "MMM", { timeZone: tz, locale: es }),
+        label: formatInZone(cursor, tz, "MMM"),
       });
       cursor = next;
     }
@@ -133,7 +137,7 @@ function buildBuckets(period: Period, start: Date, end: Date, tz: string) {
       buckets.push({
         start: cursor,
         end: new Date(cursor.getTime() + DAY_MS),
-        label: formatTz(cursor, period === "month" ? "d" : "EEE", { timeZone: tz, locale: es }),
+        label: formatInZone(cursor, tz, period === "month" ? "d" : "EEE"),
       });
     }
   }

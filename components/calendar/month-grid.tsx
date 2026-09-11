@@ -2,11 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { format as formatTz, toZonedTime } from "date-fns-tz";
-import { es } from "date-fns/locale";
+import { toZonedTime } from "date-fns-tz";
 import { EntryFormSheet } from "@/components/entries/entry-form-sheet";
 import { useOrganize } from "@/components/providers/organize-provider";
 import { formatDurationShort } from "@/lib/timer/timer-engine";
+import { formatInZone } from "@/lib/calendar/date-utils";
 import type { TimeEntry } from "@/lib/db/schema";
 import { cn } from "@/lib/utils";
 
@@ -31,19 +31,19 @@ export function MonthGrid({
   const [editing, setEditing] = useState<TimeEntry | null>(null);
 
   const weekdayLabels = weeks[0].map((d) =>
-    formatTz(d.dayStart, "EEEEE", { timeZone: timezone, locale: es }),
+    formatInZone(d.dayStart, timezone, "EEEEE"),
   );
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card">
-      <div className="grid grid-cols-7 border-b border-border text-center text-xs font-semibold text-muted-foreground">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="grid shrink-0 grid-cols-7 border-b border-border text-center text-[11px] font-semibold text-muted-foreground sm:text-xs">
         {weekdayLabels.map((label, i) => (
-          <div key={i} className="py-2.5 uppercase tracking-wide">
+          <div key={i} className="py-2 uppercase tracking-wide">
             {label}
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7">
+      <div className="grid min-h-0 flex-1 grid-cols-7 grid-rows-6">
         {weeks.flat().map((day) => {
           const dow = toZonedTime(day.dayStart, timezone).getDay();
           const isWeekend = dow === 0 || dow === 6;
@@ -54,7 +54,7 @@ export function MonthGrid({
             <div
               key={day.dateISO}
               className={cn(
-                "group flex min-h-28 flex-col gap-1 border-b border-r border-border p-1.5 transition-colors last:border-r-0 hover:bg-secondary/40",
+                "group flex min-h-16 min-w-0 flex-col gap-0.5 overflow-hidden border-b border-r border-border p-1 transition-colors last:border-r-0 hover:bg-secondary/40 sm:min-h-20 sm:gap-1 sm:p-1.5 lg:min-h-0",
                 !day.inCurrentMonth && "bg-secondary/20",
                 isWeekend && day.inCurrentMonth && "bg-secondary/10",
               )}
@@ -73,7 +73,7 @@ export function MonthGrid({
               >
                 {day.dayNumber}
               </button>
-              <div className="flex flex-col gap-1">
+              <div className="flex min-h-0 flex-col gap-0.5 overflow-hidden">
                 {visible.map((entry) => {
                   const category = categories.find((c) => c.id === entry.categoryId);
                   const color = category?.color ?? "cat-free";
