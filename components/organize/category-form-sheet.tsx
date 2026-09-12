@@ -6,11 +6,9 @@ import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CategoryDot } from "@/components/ui/category-badge";
-import { CATEGORY_COLOR_OPTIONS } from "@/lib/categories";
+import { ColorPicker } from "@/components/ui/color-picker";
 import { createCategory, updateCategory, archiveCategory } from "@/lib/actions/organize";
 import type { Category } from "@/lib/db/schema";
-import { cn } from "@/lib/utils";
 
 export function CategoryFormSheet({
   open,
@@ -64,22 +62,7 @@ export function CategoryFormSheet({
         </div>
         <div className="flex flex-col gap-1.5">
           <Label>Color</Label>
-          <div className="flex flex-wrap gap-2">
-            {CATEGORY_COLOR_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setColor(opt.value)}
-                className={cn(
-                  "flex size-9 items-center justify-center rounded-full border-2",
-                  color === opt.value ? "border-foreground" : "border-transparent",
-                )}
-                aria-label={opt.label}
-              >
-                <CategoryDot color={opt.value} className="size-5" />
-              </button>
-            ))}
-          </div>
+          <ColorPicker value={color} onChange={setColor} />
         </div>
         <div className="mt-1 flex items-center gap-2">
           {category && (

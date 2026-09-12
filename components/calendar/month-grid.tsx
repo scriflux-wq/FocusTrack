@@ -7,6 +7,7 @@ import { EntryFormSheet } from "@/components/entries/entry-form-sheet";
 import { useOrganize } from "@/components/providers/organize-provider";
 import { formatDurationShort } from "@/lib/timer/timer-engine";
 import { formatInZone } from "@/lib/calendar/date-utils";
+import { categoryColor, categorySoftColor } from "@/lib/categories";
 import type { TimeEntry } from "@/lib/db/schema";
 import { cn } from "@/lib/utils";
 
@@ -65,7 +66,7 @@ export function MonthGrid({
                 className={cn(
                   "flex size-6 shrink-0 items-center justify-center self-end rounded-full text-xs font-semibold transition-colors",
                   day.isToday
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-[linear-gradient(180deg,color-mix(in_oklch,var(--primary),white_16%),var(--primary))] text-primary-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35)]"
                     : day.inCurrentMonth
                       ? "text-foreground hover:bg-secondary"
                       : "text-muted-foreground/60",
@@ -83,8 +84,8 @@ export function MonthGrid({
                       type="button"
                       onClick={() => setEditing(entry)}
                       style={{
-                        backgroundColor: `var(--${color}-soft)`,
-                        color: `var(--${color})`,
+                        backgroundColor: categorySoftColor(color),
+                        color: categoryColor(color),
                       }}
                       className="truncate rounded-md px-1.5 py-0.5 text-left text-[10px] font-medium leading-tight"
                     >

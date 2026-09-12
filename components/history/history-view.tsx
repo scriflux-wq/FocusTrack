@@ -10,6 +10,7 @@ import { QuickLogRow } from "./quick-log-row";
 import { useOrganize } from "@/components/providers/organize-provider";
 import { formatDurationShort } from "@/lib/timer/timer-engine";
 import { formatTime } from "@/lib/calendar/date-utils";
+import { softChipStyle, categoryColor } from "@/lib/categories";
 import type { TimeEntry } from "@/lib/db/schema";
 
 export function HistoryView({
@@ -98,6 +99,7 @@ export function HistoryView({
             {dayEntries.map((entry) => {
               const category = categories.find((c) => c.id === entry.categoryId);
               const subcategory = subcategories.find((s) => s.id === entry.subcategoryId);
+              const color = category?.color ?? "cat-free";
               return (
                 <li key={entry.id}>
                   <button
@@ -105,15 +107,25 @@ export function HistoryView({
                     onClick={() => setEditing(entry)}
                     className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-secondary/60"
                   >
-                    <CategoryIcon color={category?.color ?? "cat-free"} className="size-9" />
+                    <CategoryIcon color={color} icon={category?.icon} className="size-9" />
                     <span className="flex-1 truncate">
                       <span className="block font-medium">{entry.title}</span>
-                      <span className="block text-xs text-muted-foreground">
-                        {formatTime(entry.startTime, timezone, timeFormat)}
-                        {subcategory && ` · ${subcategory.name}`}
+                      <span className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+                        <span className="tabular-nums" style={{ color: categoryColor(color) }}>
+                          {formatTime(entry.startTime, timezone, timeFormat)}
+                        </span>
+                        {subcategory && (
+                          <>
+                            <span aria-hidden>·</span>
+                            {subcategory.name}
+                          </>
+                        )}
                       </span>
                     </span>
-                    <span className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium">
+                    <span
+                      className="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums"
+                      style={softChipStyle(color)}
+                    >
                       {formatDurationShort(entry.durationSeconds ?? 0)}
                     </span>
                   </button>

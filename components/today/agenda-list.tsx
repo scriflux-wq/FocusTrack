@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { EntryFormSheet } from "@/components/entries/entry-form-sheet";
 import { useOrganize } from "@/components/providers/organize-provider";
-import { softChipStyle, dotStyle } from "@/lib/categories";
+import { CategoryIcon } from "@/components/ui/category-icon";
+import { softChipStyle, categoryColor } from "@/lib/categories";
 import { formatDurationShort } from "@/lib/timer/timer-engine";
 import { formatTime } from "@/lib/calendar/date-utils";
 import type { TimeEntry } from "@/lib/db/schema";
@@ -30,7 +31,7 @@ export function AgendaList({
 
   return (
     <>
-      <ol className="flex flex-col rounded-2xl border border-border bg-card px-4 py-3">
+      <ol className="flex flex-col gap-1 rounded-2xl border border-border bg-card p-2">
         {entries.map((entry, i) => {
           const category = categories.find((c) => c.id === entry.categoryId);
           const subcategory = subcategories.find((s) => s.id === entry.subcategoryId);
@@ -38,34 +39,32 @@ export function AgendaList({
           const isLast = i === entries.length - 1;
 
           return (
-            <li key={entry.id} className="flex gap-3">
-              <div className="flex w-12 shrink-0 justify-end pt-3.5">
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {formatTime(entry.startTime, timezone, timeFormat)}
-                </span>
-              </div>
-
-              <div className="flex flex-col items-center">
+            <li key={entry.id} className="relative flex gap-3">
+              {!isLast && (
                 <span
-                  className="mt-4 size-2.5 shrink-0 rounded-full"
-                  style={dotStyle(color)}
+                  aria-hidden
+                  className="absolute left-[35px] top-12 h-[calc(100%-2.25rem)] w-px bg-border"
                 />
-                {!isLast && <span className="w-px flex-1 bg-border" />}
-              </div>
+              )}
 
               <button
                 type="button"
                 onClick={() => setEditing(entry)}
-                className={`flex flex-1 items-center justify-between gap-3 rounded-xl px-2 py-3 text-left hover:bg-secondary/60 ${isLast ? "" : "mb-1"}`}
+                className="flex flex-1 items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-secondary/60"
               >
-                <span className="min-w-0">
+                <CategoryIcon color={color} icon={category?.icon} className="relative z-10" />
+                <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{entry.title}</span>
-                  <span className="block truncate text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+                    <span className="tabular-nums" style={{ color: categoryColor(color) }}>
+                      {formatTime(entry.startTime, timezone, timeFormat)}
+                    </span>
+                    <span aria-hidden>·</span>
                     {subcategory?.name ?? category?.name ?? "Sin categoría"}
                   </span>
                 </span>
                 <span
-                  className="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold"
+                  className="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums"
                   style={softChipStyle(color)}
                 >
                   {formatDurationShort(entry.durationSeconds ?? 0)}

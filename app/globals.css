@@ -75,9 +75,12 @@
   --background: oklch(0.985 0.003 260);
   --foreground: oklch(0.22 0.02 265);
   --surface: oklch(0.97 0.005 260);
-  --card: oklch(1 0 0);
+  /* Translucent: paired with the global backdrop-blur rule below, every
+     bg-card/bg-popover surface becomes a frosted "liquid glass" pane over
+     the gradient wash instead of a flat opaque card. */
+  --card: oklch(1 0 0 / 0.68);
   --card-foreground: oklch(0.22 0.02 265);
-  --popover: oklch(1 0 0);
+  --popover: oklch(1 0 0 / 0.82);
   --popover-foreground: oklch(0.22 0.02 265);
   --primary: oklch(0.64 0.17 283);
   --primary-foreground: oklch(0.99 0 0);
@@ -98,7 +101,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --success: oklch(0.62 0.14 155);
   --warning: oklch(0.75 0.15 70);
-  --border: oklch(0.91 0.01 265);
+  --border: oklch(0 0 0 / 0.08);
   --input: oklch(0.91 0.01 265);
   --ring: oklch(0.64 0.17 283 / 0.5);
   --chart-1: var(--cat-work);
@@ -107,7 +110,7 @@
   --chart-4: var(--cat-learning);
   --chart-5: var(--cat-personal);
   --radius: 0.75rem;
-  --sidebar: oklch(0.99 0.002 260);
+  --sidebar: oklch(0.99 0.002 260 / 0.6);
   --sidebar-foreground: oklch(0.22 0.02 265);
   --sidebar-primary: oklch(0.64 0.17 283);
   --sidebar-primary-foreground: oklch(0.99 0 0);
@@ -137,9 +140,9 @@
   --background: oklch(0.19 0.015 265);
   --foreground: oklch(0.96 0.005 260);
   --surface: oklch(0.23 0.015 265);
-  --card: oklch(0.23 0.015 265);
+  --card: oklch(0.23 0.015 265 / 0.6);
   --card-foreground: oklch(0.96 0.005 260);
-  --popover: oklch(0.23 0.015 265);
+  --popover: oklch(0.23 0.015 265 / 0.82);
   --popover-foreground: oklch(0.96 0.005 260);
   --primary: oklch(0.68 0.19 280);
   --primary-foreground: oklch(0.16 0.02 265);
@@ -167,7 +170,7 @@
   --chart-3: var(--cat-projects);
   --chart-4: var(--cat-learning);
   --chart-5: var(--cat-personal);
-  --sidebar: oklch(0.21 0.015 265);
+  --sidebar: oklch(0.21 0.015 265 / 0.55);
   --sidebar-foreground: oklch(0.96 0.005 260);
   --sidebar-primary: oklch(0.68 0.19 280);
   --sidebar-primary-foreground: oklch(0.16 0.02 265);
@@ -201,5 +204,30 @@
   }
   html {
     @apply font-sans;
+  }
+
+  /*
+   * Liquid glass: every surface already painted with bg-card / bg-popover /
+   * bg-sidebar becomes a frosted pane (blur + saturation boost) over the
+   * gradient wash, with a soft specular highlight along the top edge and a
+   * diffuse shadow standing in for depth — no per-component classes needed.
+   */
+  .bg-card,
+  .bg-popover,
+  .bg-sidebar {
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    box-shadow:
+      inset 0 1px 0 0 oklch(1 0 0 / 0.5),
+      0 1px 2px oklch(0 0 0 / 0.04),
+      0 12px 32px -16px oklch(0 0 0 / 0.18);
+  }
+  .dark .bg-card,
+  .dark .bg-popover,
+  .dark .bg-sidebar {
+    box-shadow:
+      inset 0 1px 0 0 oklch(1 0 0 / 0.06),
+      0 1px 2px oklch(0 0 0 / 0.2),
+      0 12px 32px -16px oklch(0 0 0 / 0.5);
   }
 }

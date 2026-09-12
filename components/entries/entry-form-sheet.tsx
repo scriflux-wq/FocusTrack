@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ChevronDown, Trash2 } from "lucide-react";
+import { ChevronDown, Trash2, CopyPlus } from "lucide-react";
 import { toast } from "sonner";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DateTimeField } from "@/components/ui/date-time-field";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -25,8 +27,18 @@ import {
   deleteEntry,
 } from "@/lib/actions/time-entries";
 import type { TimeEntry } from "@/lib/db/schema";
+import { es } from "date-fns/locale";
+import { format } from "date-fns";
 
 type Mode = "timer" | "manual";
+
+const DURATION_CHIPS = [
+  { label: "15 min", minutes: 15 },
+  { label: "30 min", minutes: 30 },
+  { label: "1 h", minutes: 60 },
+  { label: "2 h", minutes: 120 },
+  { label: "3 h", minutes: 180 },
+];
 
 export function EntryFormSheet({
   open,
@@ -67,6 +79,40 @@ export function EntryFormSheet({
   const [notes, setNotes] = useState(entry?.notes ?? "");
   const [tagsText, setTagsText] = useState("");
   const [showMore, setShowMore] = useState(false);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
+
+  function applyDuration(minutes: number) {
+    setEndTime(new Date(startTime.getTime() + minutes * 60 * 1000));
+  }
+
+  function handleDuplicate(day: Date | undefined) {
+    if (!day || !entry) return;
+    const durationMs = endTime.getTime() - startTime.getTime();
+    const newStart = new Date(startTime);
+    newStart.setFullYear(day.getFullYear(), day.getMonth(), day.getDate());
+    const newEnd = new Date(newStart.getTime() + durationMs);
+    setDuplicating(true);
+    startTransition(async () => {
+      try {
+        await createManualEntry({
+          title,
+          startTime: newStart,
+          endTime: newEnd,
+          categoryId,
+          subcategoryId,
+          notes: notes || null,
+          tagNames: tagNames(),
+        });
+        toast.success(`Duplicada al ${format(newStart, "EEEE d MMM", { locale: es })}`);
+        setDuplicateOpen(false);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "No se pudo duplicar");
+      } finally {
+        setDuplicating(false);
+      }
+    });
+  }
 
   function reset() {
     setTitle("");
@@ -187,6 +233,21 @@ export function EntryFormSheet({
           </div>
         )}
 
+        {(mode === "manual" || isEdit) && (
+          <div className="-mt-2 flex flex-wrap gap-1.5">
+            {DURATION_CHIPS.map((d) => (
+              <button
+                key={d.minutes}
+                type="button"
+                onClick={() => applyDuration(d.minutes)}
+                className="rounded-full border border-border bg-secondary/50 px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="flex flex-col gap-1.5">
           <Label>Categoría</Label>
           <Select
@@ -282,6 +343,30 @@ export function EntryFormSheet({
             >
               <Trash2 className="size-4" />
             </Button>
+          )}
+          {isEdit && (
+            <Popover open={duplicateOpen} onOpenChange={setDuplicateOpen}>
+              <PopoverTrigger
+                className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-50"
+                disabled={duplicating}
+                aria-label="Duplicar a otro día"
+              >
+                <CopyPlus className="size-4" />
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-auto p-2">
+                <p className="px-1 pb-1.5 text-xs font-medium text-muted-foreground">
+                  Duplicar a…
+                </p>
+                <Calendar
+                  mode="single"
+                  selected={startTime}
+                  onSelect={handleDuplicate}
+                  defaultMonth={startTime}
+                  locale={es}
+                  weekStartsOn={1}
+                />
+              </PopoverContent>
+            </Popover>
           )}
           <Button type="submit" disabled={pending} className="flex-1">
             {isEdit

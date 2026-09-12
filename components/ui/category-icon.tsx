@@ -1,5 +1,5 @@
 import * as Icons from "lucide-react";
-import { CATEGORY_ICON_BY_COLOR } from "@/lib/categories";
+import { CATEGORY_ICON_BY_COLOR, categoryColor, categorySoftColor } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 
 type IconName = keyof typeof Icons;
@@ -26,8 +26,8 @@ export function CategoryIcon({
         className,
       )}
       style={{
-        backgroundColor: `var(--${color}-soft)`,
-        color: `var(--${color})`,
+        backgroundColor: categorySoftColor(color),
+        color: categoryColor(color),
       }}
     >
       <Icon className={cn("size-5", iconClassName)} />

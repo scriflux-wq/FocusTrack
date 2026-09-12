@@ -1,27 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { CalendarDays } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { TimeSegmentInput } from "@/components/ui/time-segment-input";
 import { cn } from "@/lib/utils";
-
-const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
-const MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"));
 
 /**
  * Local date + time picker replacing the browser's `datetime-local` control:
- * a month grid plus hour/minute selects in one popover. Works in the browser's
- * local zone, like the native input it replaces.
+ * a month grid for the date, plus two type-directly segments for the time —
+ * far faster than hunting through hour/minute dropdown lists.
  */
 export function DateTimeField({
   id,
@@ -35,10 +26,7 @@ export function DateTimeField({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const hour = String(value.getHours()).padStart(2, "0");
-  const minute = String(value.getMinutes()).padStart(2, "0");
-  // Keep an odd minute (22:42) selectable when editing rather than snapping it.
-  const minuteOptions = MINUTES.includes(minute) ? MINUTES : [...MINUTES, minute].sort();
+  const minuteRef = useRef<HTMLInputElement>(null);
 
   function setDate(day: Date | undefined) {
     if (!day) return;
@@ -47,9 +35,15 @@ export function DateTimeField({
     onChange(next);
   }
 
-  function setTime(h: string, m: string) {
+  function setHour(h: number) {
     const next = new Date(value);
-    next.setHours(Number(h), Number(m), 0, 0);
+    next.setHours(h);
+    onChange(next);
+  }
+
+  function setMinute(m: number) {
+    const next = new Date(value);
+    next.setMinutes(m);
     onChange(next);
   }
 
@@ -64,9 +58,7 @@ export function DateTimeField({
       >
         <CalendarDays className="size-4 shrink-0 text-muted-foreground" />
         <span className="flex-1 truncate">{format(value, "EEE d MMM", { locale: es })}</span>
-        <span className="tabular-nums text-muted-foreground">
-          {hour}:{minute}
-        </span>
+        <span className="tabular-nums text-muted-foreground">{format(value, "HH:mm")}</span>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-auto p-2">
         <Calendar
@@ -77,41 +69,22 @@ export function DateTimeField({
           locale={es}
           weekStartsOn={1}
         />
-        <div className="flex items-center gap-2 border-t border-border px-1 pt-2">
-          <span className="flex-1 text-xs text-muted-foreground">Hora</span>
-          <Select
-            value={hour}
-            onValueChange={(h) => setTime(h ?? hour, minute)}
-            items={HOURS.map((h) => ({ value: h, label: h }))}
-          >
-            <SelectTrigger size="sm" className="w-18 tabular-nums">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="max-h-56">
-              {HOURS.map((h) => (
-                <SelectItem key={h} value={h}>
-                  {h}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex items-center justify-center gap-1 border-t border-border pt-2.5 text-lg font-semibold">
+          <TimeSegmentInput
+            aria-label="Hora"
+            value={value.getHours()}
+            max={23}
+            onChange={setHour}
+            onComplete={() => minuteRef.current?.focus()}
+          />
           <span className="text-muted-foreground">:</span>
-          <Select
-            value={minute}
-            onValueChange={(m) => setTime(hour, m ?? minute)}
-            items={minuteOptions.map((m) => ({ value: m, label: m }))}
-          >
-            <SelectTrigger size="sm" className="w-18 tabular-nums">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="max-h-56">
-              {minuteOptions.map((m) => (
-                <SelectItem key={m} value={m}>
-                  {m}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <TimeSegmentInput
+            ref={minuteRef}
+            aria-label="Minutos"
+            value={value.getMinutes()}
+            max={59}
+            onChange={setMinute}
+          />
         </div>
       </PopoverContent>
     </Popover>

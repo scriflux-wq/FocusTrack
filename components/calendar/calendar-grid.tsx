@@ -6,6 +6,7 @@ import { useOrganize } from "@/components/providers/organize-provider";
 import { useNow } from "@/hooks/use-now";
 import { formatDurationShort } from "@/lib/timer/timer-engine";
 import { formatTime, getDayRange } from "@/lib/calendar/date-utils";
+import { categoryColor, categorySoftColor } from "@/lib/categories";
 import { toZonedTime } from "date-fns-tz";
 import type { TimeEntry } from "@/lib/db/schema";
 import { cn } from "@/lib/utils";
@@ -140,7 +141,8 @@ export function CalendarGrid({
                 <span
                   className={cn(
                     "flex size-5 shrink-0 items-center justify-center rounded-full",
-                    isToday && "bg-primary text-primary-foreground",
+                    isToday &&
+                      "bg-[linear-gradient(180deg,color-mix(in_oklch,var(--primary),white_16%),var(--primary))] text-primary-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35)]",
                   )}
                 >
                   {day.dayNumber}
@@ -249,24 +251,24 @@ export function CalendarGrid({
                             height: `${heightPct}%`,
                             left: `calc(${column * widthPct}% + 2px)`,
                             width: `calc(${widthPct}% - 4px)`,
-                            backgroundColor: `var(--${color}-soft)`,
-                            borderLeftColor: `var(--${color})`,
+                            backgroundColor: categorySoftColor(color),
+                            borderLeftColor: categoryColor(color),
                           }}
                           className={cn(
-                            "absolute z-10 min-h-3.5 overflow-hidden border-l-[3px] px-1 py-0.5 text-left text-[10px] leading-tight shadow-sm transition-transform hover:z-20 hover:scale-[1.02] hover:shadow-md sm:px-1.5 sm:text-[11px]",
+                            "absolute z-10 min-h-4 overflow-hidden border-l-[3px] px-1.5 py-1 text-left text-[10px] leading-tight shadow-[inset_0_1px_0_0_oklch(1_0_0/0.35)] backdrop-blur-sm transition-transform hover:z-20 hover:scale-[1.015] hover:shadow-md sm:px-2 sm:py-1.5 sm:text-[11px]",
                             // Squared edges mark where the session runs on into the next/previous day.
-                            segment.continuesBefore ? "rounded-t-none" : "rounded-t-md sm:rounded-t-lg",
-                            segment.continuesAfter ? "rounded-b-none" : "rounded-b-md sm:rounded-b-lg",
+                            segment.continuesBefore ? "rounded-t-none" : "rounded-t-lg sm:rounded-t-xl",
+                            segment.continuesAfter ? "rounded-b-none" : "rounded-b-lg sm:rounded-b-xl",
                           )}
                         >
                           <p
                             className="truncate font-semibold"
-                            style={{ color: `var(--${color})` }}
+                            style={{ color: categoryColor(color) }}
                           >
                             {segment.continuesBefore && "… "}
                             {entry.title}
                           </p>
-                          <p className="truncate text-muted-foreground">
+                          <p className="truncate tabular-nums text-muted-foreground">
                             {formatTime(entry.startTime, timezone, timeFormat)}
                             {entry.endTime && ` – ${formatTime(entry.endTime, timezone, timeFormat)}`}
                             {" · "}

@@ -29,7 +29,7 @@ export function BottomNav() {
   const [today, calendar, timer, insights] = primaryNavItems;
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card md:hidden">
       <div className="mx-auto grid h-16 max-w-md grid-cols-5 items-center px-1">
         <NavLink item={today} active={isActive(today.href)} />
         <NavLink item={calendar} active={isActive(calendar.href)} />

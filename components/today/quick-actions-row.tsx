@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Play, PencilLine, BarChart3 } from "lucide-react";
 import { EntryFormSheet } from "@/components/entries/entry-form-sheet";
+import { categoryColor, categorySoftColor } from "@/lib/categories";
 
 type SheetState = { mode: "timer" | "manual"; start?: Date; end?: Date } | null;
 
@@ -39,7 +40,7 @@ export function QuickActionsRow({ onReviewGaps }: { onReviewGaps: () => void }) 
         >
           <span
             className="flex size-10 items-center justify-center rounded-full"
-            style={{ backgroundColor: `var(--${action.color}-soft)`, color: `var(--${action.color})` }}
+            style={{ backgroundColor: categorySoftColor(action.color), color: categoryColor(action.color) }}
           >
             <action.icon className="size-4.5" />
           </span>

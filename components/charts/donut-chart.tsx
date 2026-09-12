@@ -2,6 +2,7 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { formatDurationShort } from "@/lib/timer/timer-engine";
+import { categoryColor } from "@/lib/categories";
 import type { GroupTotal } from "@/lib/analytics/core";
 
 export function DonutChart({
@@ -31,7 +32,7 @@ export function DonutChart({
             {data.map((d) => (
               <Cell
                 key={d.key}
-                fill={`var(--${d.color ?? "cat-free"})`}
+                fill={categoryColor(d.color ?? "cat-free")}
                 className={onSliceClick ? "cursor-pointer" : undefined}
               />
             ))}
