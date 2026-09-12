@@ -81,7 +81,11 @@ export function SubcategoryFormSheet({
 
         <div className="flex flex-col gap-1.5">
           <Label>Categoría</Label>
-          <Select value={categoryId} onValueChange={(v) => setCategoryId(v ?? "")}>
+          <Select
+            value={categoryId}
+            onValueChange={(v) => setCategoryId(v ?? "")}
+            items={categories.map((c) => ({ value: c.id, label: c.name }))}
+          >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Elige una categoría" />
             </SelectTrigger>

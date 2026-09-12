@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, gte, isNull, isNotNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, isNotNull, lt } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import {
   timeEntries,
@@ -71,7 +71,13 @@ export async function getRecentActivities(userId: string, limit = 6) {
     .slice(0, limit);
 }
 
-/** Finished entries whose startTime falls within [start, end). */
+/**
+ * Finished entries that overlap [start, end) — including ones that started
+ * before the window (a night's sleep logged the previous evening still
+ * belongs to this morning). Callers clip them to the window with
+ * `clipToWindow` when summing time; the rows themselves stay intact so
+ * editing works on the real session.
+ */
 export async function getFinishedEntriesInRange(
   userId: string,
   start: Date,
@@ -84,8 +90,8 @@ export async function getFinishedEntriesInRange(
       and(
         eq(timeEntries.userId, userId),
         isNotNull(timeEntries.endTime),
-        gte(timeEntries.startTime, start),
         lt(timeEntries.startTime, end),
+        gt(timeEntries.endTime, start),
       ),
     )
     .orderBy(timeEntries.startTime);

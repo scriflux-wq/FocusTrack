@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DateTimeField } from "@/components/ui/date-time-field";
 import {
   Select,
   SelectContent,
@@ -26,11 +27,6 @@ import {
 import type { TimeEntry } from "@/lib/db/schema";
 
 type Mode = "timer" | "manual";
-
-function toLocalInputValue(date: Date): string {
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
 
 export function EntryFormSheet({
   open,
@@ -56,13 +52,11 @@ export function EntryFormSheet({
   const isEdit = Boolean(entry);
 
   const [title, setTitle] = useState(entry?.title ?? defaultTitle ?? "");
-  const [startTime, setStartTime] = useState(() =>
-    toLocalInputValue(entry?.startTime ?? defaultStart ?? new Date()),
+  const [startTime, setStartTime] = useState<Date>(
+    () => entry?.startTime ?? defaultStart ?? new Date(),
   );
-  const [endTime, setEndTime] = useState(() =>
-    toLocalInputValue(
-      entry?.endTime ?? defaultEnd ?? new Date(Date.now() + 30 * 60 * 1000),
-    ),
+  const [endTime, setEndTime] = useState<Date>(
+    () => entry?.endTime ?? defaultEnd ?? new Date(Date.now() + 30 * 60 * 1000),
   );
   const [categoryId, setCategoryId] = useState<string>(
     entry?.categoryId ?? categories[0]?.id ?? "",
@@ -116,8 +110,8 @@ export function EntryFormSheet({
           await updateEntry({
             id: entry.id,
             title,
-            startTime: new Date(startTime),
-            endTime: new Date(endTime),
+            startTime,
+            endTime,
             categoryId,
             subcategoryId,
             notes: notes || null,
@@ -136,8 +130,8 @@ export function EntryFormSheet({
         } else {
           await createManualEntry({
             title,
-            startTime: new Date(startTime),
-            endTime: new Date(endTime),
+            startTime,
+            endTime,
             categoryId,
             subcategoryId,
             notes: notes || null,
@@ -184,30 +178,22 @@ export function EntryFormSheet({
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="entry-start">Inicio</Label>
-              <Input
-                id="entry-start"
-                type="datetime-local"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                required
-              />
+              <DateTimeField id="entry-start" value={startTime} onChange={setStartTime} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="entry-end">Fin</Label>
-              <Input
-                id="entry-end"
-                type="datetime-local"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                required
-              />
+              <DateTimeField id="entry-end" value={endTime} onChange={setEndTime} />
             </div>
           </div>
         )}
 
         <div className="flex flex-col gap-1.5">
           <Label>Categoría</Label>
-          <Select value={categoryId} onValueChange={(v) => pickCategory(v ?? "")}>
+          <Select
+            value={categoryId}
+            onValueChange={(v) => pickCategory(v ?? "")}
+            items={categories.map((c) => ({ value: c.id, label: c.name }))}
+          >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Elige una categoría" />
             </SelectTrigger>
@@ -228,6 +214,10 @@ export function EntryFormSheet({
             <Select
               value={subcategoryId ?? "none"}
               onValueChange={(v) => setSubcategoryId(!v || v === "none" ? null : v)}
+              items={[
+                { value: "none", label: "Sin subcategoría" },
+                ...available.map((s) => ({ value: s.id, label: s.name })),
+              ]}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Sin subcategoría" />

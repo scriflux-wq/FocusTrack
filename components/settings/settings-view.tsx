@@ -72,7 +72,7 @@ export function SettingsView({ settings }: { settings: Settings }) {
 
         <div className="flex flex-col gap-1.5">
           <Label>La semana empieza en</Label>
-          <Select value={weekStartsOn} onValueChange={(v) => setWeekStartsOn(v ?? "1")}>
+          <Select value={weekStartsOn} onValueChange={(v) => setWeekStartsOn(v ?? "1")} items={WEEKDAYS}>
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
@@ -88,7 +88,14 @@ export function SettingsView({ settings }: { settings: Settings }) {
 
         <div className="flex flex-col gap-1.5">
           <Label>Formato de hora</Label>
-          <Select value={timeFormat} onValueChange={(v) => setTimeFormat((v ?? "24h") as "24h" | "12h")}>
+          <Select
+            value={timeFormat}
+            onValueChange={(v) => setTimeFormat((v ?? "24h") as "24h" | "12h")}
+            items={[
+              { value: "24h", label: "24 horas" },
+              { value: "12h", label: "12 horas (AM/PM)" },
+            ]}
+          >
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
@@ -101,7 +108,16 @@ export function SettingsView({ settings }: { settings: Settings }) {
 
         <div className="flex flex-col gap-1.5">
           <Label>Vista de calendario por defecto</Label>
-          <Select value={defaultCalendarView} onValueChange={(v) => setDefaultCalendarView((v ?? "week") as typeof defaultCalendarView)}>
+          <Select
+            value={defaultCalendarView}
+            onValueChange={(v) => setDefaultCalendarView((v ?? "week") as typeof defaultCalendarView)}
+            items={[
+              { value: "day", label: "Día" },
+              { value: "3day", label: "3 días" },
+              { value: "week", label: "Semana" },
+              { value: "month", label: "Mes" },
+            ]}
+          >
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>

@@ -6,7 +6,7 @@ import {
   getCategories,
 } from "@/lib/db/queries";
 import { getDayRange } from "@/lib/calendar/date-utils";
-import { getTrackedSeconds, getTimeByCategory } from "@/lib/analytics/core";
+import { getTrackedSeconds, getTimeByCategory, clipToWindow } from "@/lib/analytics/core";
 import { HistoryView } from "@/components/history/history-view";
 import { DonutChart } from "@/components/charts/donut-chart";
 import { QuoteCard } from "@/components/ui/quote-card";
@@ -28,7 +28,7 @@ export default async function HistoryPage({
   ]);
 
   const { start, end } = getDayRange(new Date(), settings.timezone);
-  const todayEntries = await getFinishedEntriesInRange(user.id, start, end);
+  const todayEntries = clipToWindow(await getFinishedEntriesInRange(user.id, start, end), start, end);
   const categoryMap = new Map(categories.map((c) => [c.id, { name: c.name, color: c.color }]));
   const todayByCategory = getTimeByCategory(todayEntries, categoryMap);
   const todayTotal = getTrackedSeconds(todayEntries);

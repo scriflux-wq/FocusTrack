@@ -12,42 +12,54 @@ import { cn } from "@/lib/utils";
 
 const MINUTES_PER_DAY = 1440;
 
+/**
+ * The part of a session that falls on one calendar day. A session crossing
+ * midnight (sleep) yields one segment per day it touches; `entry` is the
+ * untouched original so editing works on the real session.
+ */
+export type DaySegment = {
+  entry: TimeEntry;
+  start: Date;
+  end: Date;
+  continuesBefore: boolean;
+  continuesAfter: boolean;
+};
+
 export type DayColumn = {
   dayStart: Date; // UTC instant of local midnight for this day
   weekdayNarrow: string; // "V"
   weekdayShort: string; // "vie"
   dayNumber: string; // "11"
-  entries: TimeEntry[];
+  segments: DaySegment[];
 };
 
-type LaidOutEntry = { entry: TimeEntry; column: number; columnCount: number };
+type LaidOut = { segment: DaySegment; column: number; columnCount: number };
 
-/** Assigns overlapping entries to side-by-side columns so they never visually collide. */
-function layoutOverlaps(entries: TimeEntry[]): LaidOutEntry[] {
-  const sorted = [...entries].sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
-  const columns: TimeEntry[][] = [];
-  const assignment = new Map<string, number>();
+/** Assigns overlapping segments to side-by-side columns so they never visually collide. */
+function layoutOverlaps(segments: DaySegment[]): LaidOut[] {
+  const sorted = [...segments].sort((a, b) => a.start.getTime() - b.start.getTime());
+  const columns: DaySegment[][] = [];
+  const assignment = new Map<DaySegment, number>();
 
-  for (const entry of sorted) {
+  for (const segment of sorted) {
     let placed = false;
     for (let c = 0; c < columns.length; c++) {
       const last = columns[c][columns[c].length - 1];
-      const lastEnd = last.endTime ?? new Date(last.startTime.getTime() + 15 * 60000);
-      if (entry.startTime >= lastEnd) {
-        columns[c].push(entry);
-        assignment.set(entry.id, c);
+      if (segment.start >= last.end) {
+        columns[c].push(segment);
+        assignment.set(segment, c);
         placed = true;
         break;
       }
     }
     if (!placed) {
-      columns.push([entry]);
-      assignment.set(entry.id, columns.length - 1);
+      columns.push([segment]);
+      assignment.set(segment, columns.length - 1);
     }
   }
 
   const columnCount = Math.max(1, columns.length);
-  return sorted.map((entry) => ({ entry, column: assignment.get(entry.id)!, columnCount }));
+  return sorted.map((segment) => ({ segment, column: assignment.get(segment)!, columnCount }));
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -82,7 +94,9 @@ export function CalendarGrid({
   useEffect(() => {
     const body = bodyRef.current;
     if (hasScrolled.current || !body || !nowTick) return;
-    // Only meaningful where the body actually scrolls (mobile).
+    // Only where the body is a real scroller (mobile). An overflow:hidden body
+    // still accepts scrollTop, which once shifted the desktop grid by hours.
+    if (getComputedStyle(body).overflowY !== "auto") return;
     if (body.scrollHeight <= body.clientHeight) return;
     const isTodayVisible = days.some((d) => d.dayStart.getTime() === todayStart);
     const targetHour = isTodayVisible
@@ -156,7 +170,7 @@ export function CalendarGrid({
                 key={h}
                 className="flex items-start justify-end pr-1 text-[10px] text-muted-foreground sm:pr-1.5 sm:text-[11px]"
               >
-                <span className="-translate-y-1/2 tabular-nums">
+                <span className={cn("tabular-nums", h > 0 && "-translate-y-1/2")}>
                   {formatTime(new Date(days[0].dayStart.getTime() + h * 3600000), timezone, timeFormat)}
                 </span>
               </div>
@@ -171,7 +185,7 @@ export function CalendarGrid({
               const isToday = day.dayStart.getTime() === todayStart;
               const zonedDow = toZonedTime(day.dayStart, timezone).getDay();
               const isWeekend = zonedDow === 0 || zonedDow === 6;
-              const laidOut = layoutOverlaps(day.entries);
+              const laidOut = layoutOverlaps(day.segments);
               const nowPct =
                 isToday && nowTick
                   ? ((nowTick.getTime() - day.dayStart.getTime()) / 60000 / MINUTES_PER_DAY) * 100
@@ -181,7 +195,7 @@ export function CalendarGrid({
                 <div
                   key={day.dayStart.getTime()}
                   className={cn(
-                    "relative min-w-0 border-l border-border first:border-l-0",
+                    "relative min-w-0 overflow-hidden border-l border-border first:border-l-0",
                     isWeekend && "bg-secondary/30",
                     isToday && "bg-primary/[0.04]",
                   )}
@@ -212,24 +226,19 @@ export function CalendarGrid({
                       </div>
                     )}
 
-                    {laidOut.map(({ entry, column, columnCount }) => {
+                    {laidOut.map(({ segment, column, columnCount }) => {
+                      const { entry } = segment;
                       const category = categories.find((c) => c.id === entry.categoryId);
                       const color = category?.color ?? "cat-free";
-                      const startMin =
-                        (entry.startTime.getTime() - day.dayStart.getTime()) / 60000;
-                      const endMin = entry.endTime
-                        ? (entry.endTime.getTime() - day.dayStart.getTime()) / 60000
-                        : startMin + 15;
-                      const topPct = Math.max(0, (startMin / MINUTES_PER_DAY) * 100);
-                      const heightPct = Math.max(
-                        0.6,
-                        ((endMin - startMin) / MINUTES_PER_DAY) * 100,
-                      );
+                      const startMin = (segment.start.getTime() - day.dayStart.getTime()) / 60000;
+                      const endMin = (segment.end.getTime() - day.dayStart.getTime()) / 60000;
+                      const topPct = (startMin / MINUTES_PER_DAY) * 100;
+                      const heightPct = Math.max(0.6, ((endMin - startMin) / MINUTES_PER_DAY) * 100);
                       const widthPct = 100 / columnCount;
 
                       return (
                         <button
-                          key={entry.id}
+                          key={`${entry.id}-${segment.start.getTime()}`}
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -243,16 +252,24 @@ export function CalendarGrid({
                             backgroundColor: `var(--${color}-soft)`,
                             borderLeftColor: `var(--${color})`,
                           }}
-                          className="absolute z-10 min-h-3.5 overflow-hidden rounded-md border-l-[3px] px-1 py-0.5 text-left text-[10px] leading-tight shadow-sm transition-transform hover:z-20 hover:scale-[1.02] hover:shadow-md sm:rounded-lg sm:px-1.5 sm:text-[11px]"
+                          className={cn(
+                            "absolute z-10 min-h-3.5 overflow-hidden border-l-[3px] px-1 py-0.5 text-left text-[10px] leading-tight shadow-sm transition-transform hover:z-20 hover:scale-[1.02] hover:shadow-md sm:px-1.5 sm:text-[11px]",
+                            // Squared edges mark where the session runs on into the next/previous day.
+                            segment.continuesBefore ? "rounded-t-none" : "rounded-t-md sm:rounded-t-lg",
+                            segment.continuesAfter ? "rounded-b-none" : "rounded-b-md sm:rounded-b-lg",
+                          )}
                         >
                           <p
                             className="truncate font-semibold"
                             style={{ color: `var(--${color})` }}
                           >
+                            {segment.continuesBefore && "… "}
                             {entry.title}
                           </p>
                           <p className="truncate text-muted-foreground">
-                            {formatTime(entry.startTime, timezone, timeFormat)} ·{" "}
+                            {formatTime(entry.startTime, timezone, timeFormat)}
+                            {entry.endTime && ` – ${formatTime(entry.endTime, timezone, timeFormat)}`}
+                            {" · "}
                             {formatDurationShort(entry.durationSeconds ?? 0)}
                           </p>
                         </button>

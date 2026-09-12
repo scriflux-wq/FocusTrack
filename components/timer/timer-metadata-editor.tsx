@@ -65,7 +65,11 @@ export function TimerMetadataEditor() {
         <FolderKanban className="size-4 text-muted-foreground" />
         <div className="flex-1">
           <p className="text-[11px] text-muted-foreground">Category</p>
-          <Select value={entry.categoryId ?? "none"} onValueChange={handleCategoryChange}>
+          <Select
+            value={entry.categoryId ?? "none"}
+            onValueChange={handleCategoryChange}
+            items={categories.map((c) => ({ value: c.id, label: c.name }))}
+          >
             <SelectTrigger className="h-auto w-full border-none bg-transparent p-0 text-sm font-medium shadow-none">
               <SelectValue placeholder="Sin categoría" />
             </SelectTrigger>

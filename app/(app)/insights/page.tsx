@@ -13,6 +13,7 @@ import {
   getMostProductiveDay,
   getLongestStreak,
   getUntrackedSeconds,
+  clipToWindow,
 } from "@/lib/analytics/core";
 import { InsightsView, type Period } from "@/components/insights/insights-view";
 import type { TimeEntry } from "@/lib/db/schema";
@@ -51,15 +52,17 @@ export default async function InsightsPage({
     getFinishedEntriesInRange(user.id, previousStart, previousEnd),
   ]);
 
-  const total = getTrackedSeconds(toAnalytics(entries));
-  const previousTotal = getTrackedSeconds(toAnalytics(previousEntries));
+  const total = getTrackedSeconds(clipToWindow(toAnalytics(entries), start, end));
+  const previousTotal = getTrackedSeconds(
+    clipToWindow(toAnalytics(previousEntries), previousStart, previousEnd),
+  );
   const comparison = getPeriodComparison(total, previousTotal);
 
   const buckets = buildBuckets(period, start, end, tz);
   const dailyTotals = buckets.map((b) => ({
     day: b.label,
     seconds: getTrackedSeconds(
-      toAnalytics(entries.filter((e) => e.startTime >= b.start && e.startTime < b.end)),
+      clipToWindow(toAnalytics(entries), b.start, b.end),
     ),
   }));
   const mostProductiveDay = getMostProductiveDay(dailyTotals);
@@ -71,12 +74,9 @@ export default async function InsightsPage({
     const dayMsStart = getDayRange(start, tz).start;
     for (let cursor = dayMsStart; cursor < end; cursor = new Date(cursor.getTime() + DAY_MS)) {
       const dayEnd = new Date(cursor.getTime() + DAY_MS);
-      const dayEntries = entries.filter(
-        (e) => e.startTime >= cursor && e.startTime < dayEnd,
-      );
       // Never claim time that hasn't happened yet is "untracked".
       const windowEnd = capToNow(dayEnd, now);
-      untrackedSeconds += getUntrackedSeconds(toAnalytics(dayEntries), cursor, windowEnd);
+      untrackedSeconds += getUntrackedSeconds(toAnalytics(entries), cursor, windowEnd);
     }
   }
 
@@ -86,17 +86,17 @@ export default async function InsightsPage({
   const streakEntries = await getFinishedEntriesInRange(user.id, streakStart, streakEnd);
   const streakDays: { seconds: number }[] = [];
   for (let cursor = streakStart; cursor < streakEnd; cursor = new Date(cursor.getTime() + DAY_MS)) {
-    const dayEntries = streakEntries.filter(
-      (e) => e.startTime >= cursor && e.startTime < new Date(cursor.getTime() + DAY_MS),
-    );
-    streakDays.push({ seconds: getTrackedSeconds(toAnalytics(dayEntries)) });
+    const dayEnd = new Date(cursor.getTime() + DAY_MS);
+    streakDays.push({
+      seconds: getTrackedSeconds(clipToWindow(toAnalytics(streakEntries), cursor, dayEnd)),
+    });
   }
   const streak = getLongestStreak(streakDays);
 
   return (
     <InsightsView
       period={period}
-      entries={toAnalytics(entries)}
+      entries={clipToWindow(toAnalytics(entries), start, end)}
       dailyTotals={dailyTotals}
       comparisonPercent={comparison.percent}
       mostProductiveDay={mostProductiveDay}

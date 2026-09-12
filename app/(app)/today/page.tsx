@@ -11,6 +11,7 @@ import { getDayRange, formatDayLabel, capToNow } from "@/lib/calendar/date-utils
 import {
   getTrackedSeconds,
   getTimeByCategory,
+  clipToWindow,
   getUntrackedRanges,
   getUntrackedSeconds,
 } from "@/lib/analytics/core";
@@ -38,9 +39,10 @@ export default async function TodayPage() {
     getRecentActivities(user.id),
   ]);
 
-  const trackedSeconds = getTrackedSeconds(entries);
+  const todayOnly = clipToWindow(entries, start, end);
+  const trackedSeconds = getTrackedSeconds(todayOnly);
   const categoryMap = new Map(categories.map((c) => [c.id, { name: c.name, color: c.color }]));
-  const categoryTotals = getTimeByCategory(entries, categoryMap);
+  const categoryTotals = getTimeByCategory(todayOnly, categoryMap);
 
   // "Untracked" spans the whole calendar day (from midnight), capped so it
   // never claims time that hasn't happened yet.

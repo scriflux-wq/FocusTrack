@@ -18,6 +18,37 @@ function seconds(e: AnalyticsEntry): number {
   return e.durationSeconds ?? 0;
 }
 
+/**
+ * Restricts entries to [start, end): drops the ones outside, trims the ones
+ * that straddle an edge and recomputes their duration. Sessions routinely
+ * cross midnight (sleep), so per-day and per-period totals must count only
+ * the part that falls inside the window.
+ */
+export function clipToWindow<T extends AnalyticsEntry>(
+  entries: T[],
+  start: Date,
+  end: Date,
+): T[] {
+  const out: T[] = [];
+  for (const e of entries) {
+    if (!e.endTime) continue;
+    const s = e.startTime > start ? e.startTime : start;
+    const f = e.endTime < end ? e.endTime : end;
+    if (f <= s) continue;
+    if (s === e.startTime && f === e.endTime) {
+      out.push(e);
+      continue;
+    }
+    out.push({
+      ...e,
+      startTime: s,
+      endTime: f,
+      durationSeconds: Math.round((f.getTime() - s.getTime()) / 1000),
+    });
+  }
+  return out;
+}
+
 export function getTrackedSeconds(entries: AnalyticsEntry[]): number {
   return entries.reduce((sum, e) => sum + seconds(e), 0);
 }

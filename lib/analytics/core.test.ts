@@ -6,6 +6,7 @@ import {
   getLongestStreak,
   getPeriodComparison,
   getMostProductiveDay,
+  clipToWindow,
   type AnalyticsEntry,
 } from "./core";
 
@@ -119,5 +120,40 @@ describe("getPeriodComparison", () => {
 
   it("returns null percent when the previous period was zero", () => {
     expect(getPeriodComparison(50, 0)).toEqual({ deltaSeconds: 50, percent: null });
+  });
+});
+
+describe("clipToWindow", () => {
+  const day = (iso: string) => new Date(iso);
+  const sleep = {
+    id: "sleep",
+    title: "Sleep",
+    startTime: day("2026-09-11T20:42:00Z"), // Fri 22:42 Madrid
+    endTime: day("2026-09-12T05:36:00Z"), // Sat 07:36 Madrid
+    durationSeconds: 8 * 3600 + 54 * 60,
+    categoryId: null,
+    subcategoryId: null,
+  };
+  const friday = { start: day("2026-09-10T22:00:00Z"), end: day("2026-09-11T22:00:00Z") };
+  const saturday = { start: day("2026-09-11T22:00:00Z"), end: day("2026-09-12T22:00:00Z") };
+
+  it("counts only the part of a session inside each day", () => {
+    const [fri] = clipToWindow([sleep], friday.start, friday.end);
+    const [sat] = clipToWindow([sleep], saturday.start, saturday.end);
+    expect(fri.durationSeconds).toBe(78 * 60); // 22:42 -> 24:00
+    expect(sat.durationSeconds).toBe(7 * 3600 + 36 * 60); // 00:00 -> 07:36
+    expect(fri.durationSeconds! + sat.durationSeconds!).toBe(sleep.durationSeconds);
+  });
+
+  it("drops sessions that do not touch the window and keeps contained ones intact", () => {
+    const sunday = { start: day("2026-09-12T22:00:00Z"), end: day("2026-09-13T22:00:00Z") };
+    expect(clipToWindow([sleep], sunday.start, sunday.end)).toEqual([]);
+    const wide = clipToWindow([sleep], friday.start, saturday.end);
+    expect(wide[0]).toBe(sleep);
+  });
+
+  it("does not mutate the original session", () => {
+    clipToWindow([sleep], saturday.start, saturday.end);
+    expect(sleep.startTime.toISOString()).toBe("2026-09-11T20:42:00.000Z");
   });
 });

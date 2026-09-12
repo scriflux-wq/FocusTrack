@@ -13,20 +13,16 @@ import {
 } from "@/components/ui/select";
 import { CategoryDot } from "@/components/ui/category-badge";
 import { useOrganize } from "@/components/providers/organize-provider";
+import { DateTimeField } from "@/components/ui/date-time-field";
 import { createManualEntry } from "@/lib/actions/time-entries";
-
-function toLocalInputValue(date: Date): string {
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
 
 export function QuickLogRow() {
   const { categories } = useOrganize();
   const now = new Date();
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
-  const [start, setStart] = useState(toLocalInputValue(new Date(now.getTime() - 30 * 60000)));
-  const [end, setEnd] = useState(toLocalInputValue(now));
+  const [start, setStart] = useState<Date>(() => new Date(now.getTime() - 30 * 60000));
+  const [end, setEnd] = useState<Date>(() => now);
   const [pending, startTransition] = useTransition();
 
   function handleSubmit(e: React.FormEvent) {
@@ -37,8 +33,8 @@ export function QuickLogRow() {
         await createManualEntry({
           title,
           categoryId,
-          startTime: new Date(start),
-          endTime: new Date(end),
+          startTime: start,
+          endTime: end,
         });
         setTitle("");
         toast.success("Actividad registrada");
@@ -64,7 +60,11 @@ export function QuickLogRow() {
       </div>
       <div className="sm:w-40">
         <label className="mb-1 block text-[11px] text-muted-foreground">Categoría</label>
-        <Select value={categoryId} onValueChange={(v) => setCategoryId(v ?? "")}>
+        <Select
+          value={categoryId}
+          onValueChange={(v) => setCategoryId(v ?? "")}
+          items={categories.map((c) => ({ value: c.id, label: c.name }))}
+        >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Categoría" />
           </SelectTrigger>
@@ -80,21 +80,11 @@ export function QuickLogRow() {
       </div>
       <div>
         <label className="mb-1 block text-[11px] text-muted-foreground">Start</label>
-        <Input
-          type="datetime-local"
-          value={start}
-          onChange={(e) => setStart(e.target.value)}
-          className="w-auto"
-        />
+        <DateTimeField value={start} onChange={setStart} className="sm:w-44" />
       </div>
       <div>
         <label className="mb-1 block text-[11px] text-muted-foreground">End</label>
-        <Input
-          type="datetime-local"
-          value={end}
-          onChange={(e) => setEnd(e.target.value)}
-          className="w-auto"
-        />
+        <DateTimeField value={end} onChange={setEnd} className="sm:w-44" />
       </div>
       <Button type="submit" disabled={pending} className="rounded-full">
         Save
