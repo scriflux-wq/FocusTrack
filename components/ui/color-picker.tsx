@@ -1,11 +1,10 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, ChevronDown, Palette } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { CATEGORY_COLOR_OPTIONS, categoryColor } from "@/lib/categories";
-
-const PRESET_HUES = Array.from({ length: 10 }, (_, i) => Math.round((360 / 10) * i));
 
 function parseHsl(color: string): { h: number; s: number; l: number } | null {
   const m = color.match(/^hsl\(\s*(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%\s*\)$/i);
@@ -15,11 +14,11 @@ function parseHsl(color: string): { h: number; s: number; l: number } | null {
 
 /**
  * HSV maps perfectly onto a square (saturation × brightness); HSL doesn't, so
- * the picker works in HSV internally and converts to/from the HSL string the
- * rest of the app stores and renders. Both functions take and return
- * percentages (0-100) — the standard HSV/HSL conversion formulas need
- * fractions (0-1), so s/v/l/l are normalized on the way in and scaled back
- * up on the way out.
+ * the custom picker works in HSV internally and converts to/from the HSL
+ * string the rest of the app stores and renders. Both functions take and
+ * return percentages (0-100) — the standard HSV/HSL conversion formulas need
+ * fractions (0-1), so s/v/l are normalized on the way in and scaled back up
+ * on the way out.
  */
 function hsvToHsl(h: number, s: number, v: number): { h: number; s: number; l: number } {
   const S = s / 100;
@@ -37,11 +36,15 @@ function hslToHsv(h: number, s: number, l: number): { h: number; s: number; v: n
   return { h, s: sv * 100, v: v * 100 };
 }
 
+function labelFor(value: string): string {
+  return CATEGORY_COLOR_OPTIONS.find((o) => o.value === value)?.label ?? "Personalizado";
+}
+
 /**
- * A real color picker: a saturation/brightness square plus a hue strip, both
- * drag-to-pick, the same interaction model as macOS, Figma or Sketch — far
- * more "premium" and precise than a pair of plain range sliders. Presets
- * above give a one-tap shortcut for the common cases.
+ * A dropdown, not an always-open panel: a trigger showing the current swatch
+ * and name, opening a grid of named presets (tap to pick, done). A
+ * "Personalizado" row underneath expands into a drag-to-pick saturation/
+ * brightness square plus hue strip for anything outside the preset set.
  */
 export function ColorPicker({
   value,
@@ -50,6 +53,9 @@ export function ColorPicker({
   value: string;
   onChange: (color: string) => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const [customOpen, setCustomOpen] = useState(() => !value.startsWith("cat-"));
+
   const isToken = !value.startsWith("hsl(");
   const parsedHsl = parseHsl(value);
   const initialHsv = parsedHsl ? hslToHsv(parsedHsl.h, parsedHsl.s, parsedHsl.l) : null;
@@ -60,12 +66,12 @@ export function ColorPicker({
 
   const hsl = useMemo(() => hsvToHsl(h, s, v), [h, s, v]);
   const current = `hsl(${Math.round(hsl.h)} ${Math.round(hsl.s)}% ${Math.round(hsl.l)}%)`;
-  const swatchColor = isToken ? categoryColor(value) : current;
+  const triggerColor = isToken ? categoryColor(value) : current;
 
   const squareRef = useRef<HTMLDivElement>(null);
   const hueRef = useRef<HTMLDivElement>(null);
 
-  function commit(nh: number, ns: number, nv: number) {
+  function commitCustom(nh: number, ns: number, nv: number) {
     setH(nh);
     setS(ns);
     setV(nv);
@@ -80,7 +86,7 @@ export function ColorPicker({
     const move = (clientX: number, clientY: number) => {
       const x = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
       const y = Math.min(1, Math.max(0, (clientY - rect.top) / rect.height));
-      commit(h, x * 100, (1 - y) * 100);
+      commitCustom(h, x * 100, (1 - y) * 100);
     };
     move(e.clientX, e.clientY);
     target.onpointermove = (ev) => move(ev.clientX, ev.clientY);
@@ -95,7 +101,7 @@ export function ColorPicker({
     const rect = hueRef.current!.getBoundingClientRect();
     const move = (clientX: number) => {
       const x = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-      commit(x * 360, s, v);
+      commitCustom(x * 360, s, v);
     };
     move(e.clientX);
     target.onpointermove = (ev) => move(ev.clientX);
@@ -105,107 +111,97 @@ export function ColorPicker({
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <Swatch
-          key="preview"
-          color={swatchColor}
-          selected={false}
-          label="Color actual"
-          onClick={() => {}}
-          large
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger className="flex h-10 w-full items-center gap-2.5 rounded-xl border border-border bg-card px-3 text-sm transition-colors hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+        <Palette className="size-4 shrink-0 text-muted-foreground" />
+        <span
+          className="size-5 shrink-0 rounded-full shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.5)]"
+          style={{ backgroundColor: triggerColor }}
         />
-        <span className="h-7 w-px bg-border" aria-hidden />
-        {CATEGORY_COLOR_OPTIONS.map((opt) => (
-          <Swatch
-            key={opt.value}
-            color={categoryColor(opt.value)}
-            selected={value === opt.value}
-            label={opt.label}
-            onClick={() => onChange(opt.value)}
-          />
-        ))}
-        {PRESET_HUES.map((hue) => (
-          <Swatch
-            key={hue}
-            color={`hsl(${hue} 78% 60%)`}
-            selected={false}
-            label="Color"
-            onClick={() => commit(hue, 78, 82)}
-          />
-        ))}
-      </div>
-
-      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-secondary/40 p-3">
-        <div
-          ref={squareRef}
-          onPointerDown={dragSquare}
-          className="relative aspect-[5/3] w-full touch-none rounded-xl shadow-inner"
-          style={{
-            backgroundColor: `hsl(${h} 100% 50%)`,
-            backgroundImage:
-              "linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent)",
-          }}
-        >
-          <span
-            className="pointer-events-none absolute size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_1px_4px_rgba(0,0,0,0.5)]"
-            style={{
-              left: `${s}%`,
-              top: `${100 - v}%`,
-              backgroundColor: current,
-            }}
-          />
+        <span className="flex-1 truncate text-left font-medium">
+          {isToken ? labelFor(value) : "Personalizado"}
+        </span>
+        <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 p-3">
+        <div className="grid grid-cols-3 gap-2">
+          {CATEGORY_COLOR_OPTIONS.map((opt) => {
+            const selected = value === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setCustomOpen(false);
+                  setOpen(false);
+                }}
+                className="flex flex-col items-center gap-1.5 rounded-lg py-2 transition-colors hover:bg-secondary/60"
+              >
+                <span
+                  className={cn(
+                    "flex size-10 items-center justify-center rounded-full ring-2 ring-offset-2 ring-offset-popover transition-transform",
+                    selected ? "ring-foreground" : "ring-transparent",
+                  )}
+                >
+                  <span
+                    className="flex size-full items-center justify-center rounded-full shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.5),0_1px_2px_rgba(0,0,0,0.15)]"
+                    style={{ backgroundColor: categoryColor(opt.value) }}
+                  >
+                    {selected && (
+                      <Check className="size-4 text-white drop-shadow-sm" strokeWidth={3} />
+                    )}
+                  </span>
+                </span>
+                <span className="text-xs text-muted-foreground">{opt.label}</span>
+              </button>
+            );
+          })}
         </div>
 
-        <div
-          ref={hueRef}
-          onPointerDown={dragHue}
-          className="relative h-4 w-full touch-none rounded-full"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, hsl(0 90% 55%), hsl(60 90% 55%), hsl(120 90% 55%), hsl(180 90% 55%), hsl(240 90% 55%), hsl(300 90% 55%), hsl(360 90% 55%))",
-          }}
+        <button
+          type="button"
+          onClick={() => setCustomOpen((v) => !v)}
+          className="mt-2 flex w-full items-center justify-between rounded-lg border-t border-border px-1 pt-3 text-xs font-medium text-muted-foreground hover:text-foreground"
         >
-          <span
-            className="pointer-events-none absolute top-1/2 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_1px_4px_rgba(0,0,0,0.4)]"
-            style={{ left: `${(h / 360) * 100}%`, backgroundColor: `hsl(${h} 90% 55%)` }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
+          Color personalizado
+          <ChevronDown className={cn("size-3.5 transition-transform", customOpen && "rotate-180")} />
+        </button>
 
-function Swatch({
-  color,
-  selected,
-  label,
-  onClick,
-  large,
-}: {
-  color: string;
-  selected: boolean;
-  label: string;
-  onClick: () => void;
-  large?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      className={cn(
-        "flex shrink-0 items-center justify-center rounded-full ring-2 ring-offset-2 ring-offset-background transition-transform",
-        large ? "size-9" : "size-7 hover:scale-110",
-        selected ? "ring-foreground" : "ring-transparent",
-      )}
-    >
-      <span
-        className="flex size-full items-center justify-center rounded-full shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.5),0_1px_2px_rgba(0,0,0,0.15)]"
-        style={{ backgroundColor: color }}
-      >
-        {selected && <Check className="size-3.5 text-white drop-shadow-sm" strokeWidth={3} />}
-      </span>
-    </button>
+        {customOpen && (
+          <div className="mt-2 flex flex-col gap-2.5 rounded-xl border border-border bg-secondary/40 p-2.5">
+            <div
+              ref={squareRef}
+              onPointerDown={dragSquare}
+              className="relative aspect-[5/3] w-full touch-none rounded-lg shadow-inner"
+              style={{
+                backgroundColor: `hsl(${h} 100% 50%)`,
+                backgroundImage:
+                  "linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent)",
+              }}
+            >
+              <span
+                className="pointer-events-none absolute size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_1px_4px_rgba(0,0,0,0.5)]"
+                style={{ left: `${s}%`, top: `${100 - v}%`, backgroundColor: current }}
+              />
+            </div>
+            <div
+              ref={hueRef}
+              onPointerDown={dragHue}
+              className="relative h-4 w-full touch-none rounded-full"
+              style={{
+                backgroundImage:
+                  "linear-gradient(to right, hsl(0 90% 55%), hsl(60 90% 55%), hsl(120 90% 55%), hsl(180 90% 55%), hsl(240 90% 55%), hsl(300 90% 55%), hsl(360 90% 55%))",
+              }}
+            >
+              <span
+                className="pointer-events-none absolute top-1/2 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_1px_4px_rgba(0,0,0,0.4)]"
+                style={{ left: `${(h / 360) * 100}%`, backgroundColor: `hsl(${h} 90% 55%)` }}
+              />
+            </div>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }

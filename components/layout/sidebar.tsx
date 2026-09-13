@@ -24,8 +24,10 @@ export function Sidebar() {
 
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-4 py-6 md:flex">
-      <div className="mb-8 flex items-center gap-2 px-2">
-        <Sparkle className="size-5 text-primary" strokeWidth={1.75} />
+      <div className="mb-8 flex items-center gap-2.5 px-2">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,color-mix(in_oklch,var(--primary),white_25%),var(--primary))] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),0_2px_6px_-2px_var(--ring)]">
+          <Sparkle className="size-4 text-primary-foreground" strokeWidth={2} />
+        </span>
         <div>
           <span className="font-serif text-lg leading-none font-semibold text-sidebar-foreground">
             FocusTrack
@@ -71,11 +73,12 @@ export function Sidebar() {
         </button>
       </nav>
 
-      <div className="mt-auto flex flex-col gap-3 pt-6">
+      <div className="mt-auto flex flex-col gap-3 border-t border-sidebar-border pt-5">
         <p className="font-serif text-sm italic leading-snug text-muted-foreground">
           &ldquo;Pequeños pasos hoy construyen un mañana mejor.&rdquo;
         </p>
         <MountainArt className="h-10 w-full opacity-70" />
+        <p className="text-[10px] font-medium tracking-wide text-muted-foreground/60">v1.0.0</p>
       </div>
 
       <Dialog open={moreOpen} onOpenChange={setMoreOpen}>

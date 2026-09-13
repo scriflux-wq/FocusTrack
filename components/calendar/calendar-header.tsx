@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCalendarNavigation } from "./calendar-transition";
@@ -66,13 +66,26 @@ export function CalendarHeader({
           {label}
         </h1>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => navigate(prevHref)} aria-label="Anterior">
-            <ChevronLeft className="size-4" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={() => navigate(nextHref)} aria-label="Siguiente">
-            <ChevronRight className="size-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate(todayHref)}>
+          <div className="flex items-center rounded-full border border-border bg-card">
+            <button
+              type="button"
+              onClick={() => navigate(prevHref)}
+              aria-label="Anterior"
+              className="flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <CalendarDays className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+            <button
+              type="button"
+              onClick={() => navigate(nextHref)}
+              aria-label="Siguiente"
+              className="flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+          <Button variant="outline" size="sm" className="rounded-full" onClick={() => navigate(todayHref)}>
             Hoy
           </Button>
         </div>

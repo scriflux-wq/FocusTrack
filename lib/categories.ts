@@ -37,13 +37,12 @@ export function softChipStyle(color: string): React.CSSProperties {
 
 /** Curated preset chips shown above the free color picker. */
 export const CATEGORY_COLOR_OPTIONS = [
-  { value: "cat-work", label: "Azul" },
-  { value: "cat-health", label: "Verde" },
-  { value: "cat-projects", label: "Violeta" },
-  { value: "cat-learning", label: "Naranja" },
-  { value: "cat-personal", label: "Amarillo" },
-  { value: "cat-admin", label: "Gris" },
-  { value: "cat-free", label: "Lavanda" },
+  { value: "cat-work", label: "Periwinkle" },
+  { value: "cat-health", label: "Teal" },
+  { value: "cat-personal", label: "Sky" },
+  { value: "cat-learning", label: "Sand" },
+  { value: "cat-projects", label: "Lavender" },
+  { value: "cat-admin", label: "Slate" },
 ] as const;
 
 /** Default icon per preset color key, used until a category picks its own icon. */
