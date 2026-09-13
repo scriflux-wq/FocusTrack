@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Plus } from "lucide-react";
+import { CategoryIcon } from "@/components/ui/category-icon";
 import { EntryFormSheet } from "@/components/entries/entry-form-sheet";
 import { useOrganize } from "@/components/providers/organize-provider";
 import { useNow } from "@/hooks/use-now";
@@ -31,6 +33,7 @@ export type DayColumn = {
   weekdayNarrow: string; // "V"
   weekdayShort: string; // "vie"
   dayNumber: string; // "11"
+  monthShort: string; // "sep"
   segments: DaySegment[];
 };
 
@@ -88,7 +91,22 @@ export function CalendarGrid({
   // mismatch on the "now" line's exact pixel position); fills in right after.
   const nowTick = useNow();
   const bodyRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
   const hasScrolled = useRef(false);
+  // Real pixels per hour, so a card knows whether it has room for its time
+  // line. Percent-of-day can't tell: a 1h block is 4% of the day whether that
+  // is 25px on a laptop or 45px on a tall monitor.
+  const [hourPx, setHourPx] = useState<number | null>(null);
+
+  useEffect(() => {
+    const el = gridRef.current;
+    if (!el) return;
+    const measure = () => setHourPx(el.clientHeight / 24);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const todayStart = nowTick ? getDayRange(nowTick, timezone).start.getTime() : null;
 
@@ -121,7 +139,7 @@ export function CalendarGrid({
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-card">
       {/* Day-name header, pinned above the (possibly scrolling) body */}
-      <div className="flex shrink-0 border-b border-border">
+      <div className="flex shrink-0 border-b border-border/70">
         <div className="w-9 shrink-0 sm:w-13" />
         <div
           className="grid flex-1"
@@ -129,24 +147,45 @@ export function CalendarGrid({
         >
           {days.map((day) => {
             const isToday = day.dayStart.getTime() === todayStart;
+            // A dot under the date, tinted by the day's first session, hints
+            // at where the time went without reading the grid.
+            const firstCategory = categories.find(
+              (c) => c.id === day.segments[0]?.entry.categoryId,
+            );
             return (
               <div
                 key={day.dayStart.getTime()}
-                className="flex min-w-0 items-center justify-center gap-1 border-l border-border py-2 text-[11px] font-semibold capitalize first:border-l-0 sm:text-xs"
+                className={cn(
+                  "flex min-w-0 flex-col items-center justify-center gap-0.5 border-l border-border py-2 capitalize first:border-l-0 sm:py-2.5",
+                  isToday && "bg-primary/[0.07]",
+                )}
               >
-                <span className={cn("truncate text-muted-foreground", isToday && "text-primary")}>
+                <span
+                  className={cn(
+                    "truncate text-[10px] font-medium text-muted-foreground sm:text-[11px]",
+                    isToday && "text-primary",
+                  )}
+                >
                   <span className="sm:hidden">{day.weekdayNarrow}</span>
                   <span className="hidden sm:inline">{day.weekdayShort}</span>
                 </span>
                 <span
                   className={cn(
-                    "flex size-5 shrink-0 items-center justify-center rounded-full",
-                    isToday &&
-                      "bg-[linear-gradient(180deg,color-mix(in_oklch,var(--primary),white_16%),var(--primary))] text-primary-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35)]",
+                    "truncate text-xs font-semibold sm:text-sm",
+                    isToday ? "text-primary" : "text-foreground",
                   )}
                 >
                   {day.dayNumber}
+                  <span className="hidden sm:inline"> {day.monthShort}</span>
                 </span>
+                <span
+                  className="size-1.5 rounded-full"
+                  style={{
+                    backgroundColor: firstCategory
+                      ? categoryColor(firstCategory.color)
+                      : "transparent",
+                  }}
+                />
               </div>
             );
           })}
@@ -162,7 +201,7 @@ export function CalendarGrid({
         ref={bodyRef}
         className="min-h-0 flex-1 overflow-y-auto lg:overflow-hidden [scrollbar-width:thin]"
       >
-        <div className="flex h-240 lg:h-full">
+        <div ref={gridRef} className="flex h-240 lg:h-full">
           <div
             className="grid w-9 shrink-0 sm:w-13"
             style={{ gridTemplateRows: `repeat(24, minmax(0, 1fr))` }}
@@ -170,7 +209,7 @@ export function CalendarGrid({
             {HOURS.map((h) => (
               <div
                 key={h}
-                className="flex items-start justify-end pr-1 text-[10px] text-muted-foreground sm:pr-1.5 sm:text-[11px]"
+                className="flex items-start justify-end pr-1.5 text-[10px] text-muted-foreground/70 sm:pr-2 sm:text-[11px]"
               >
                 <span className={cn("tabular-nums", h > 0 && "-translate-y-1/2")}>
                   {formatTime(new Date(days[0].dayStart.getTime() + h * 3600000), timezone, timeFormat)}
@@ -197,9 +236,9 @@ export function CalendarGrid({
                 <div
                   key={day.dayStart.getTime()}
                   className={cn(
-                    "relative min-w-0 overflow-hidden border-l border-border first:border-l-0",
-                    isWeekend && "bg-secondary/30",
-                    isToday && "bg-primary/[0.04]",
+                    "@container relative min-w-0 overflow-hidden border-l border-border/60 first:border-l-0",
+                    isWeekend && !isToday && "bg-secondary/25",
+                    isToday && "bg-primary/[0.07]",
                   )}
                 >
                   <div
@@ -211,9 +250,14 @@ export function CalendarGrid({
                       style={{ gridTemplateRows: `repeat(24, minmax(0, 1fr))` }}
                     >
                       {HOURS.map((h) => (
-                        <div key={h} className="relative">
-                          <div className="absolute inset-x-0 top-0 border-t border-border/70" />
-                          <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-border/40" />
+                        <div
+                          key={h}
+                          className="group/hour relative border-t border-border/50 first:border-t-0"
+                        >
+                          {/* Hover affordance for the click-to-create empty slot */}
+                          <span className="pointer-events-none absolute inset-0.5 flex items-center justify-center rounded-lg border border-dashed border-primary/0 text-primary/0 transition-colors group-hover/hour:border-primary/40 group-hover/hour:bg-primary/5 group-hover/hour:text-primary/70">
+                            <Plus className="size-3.5" />
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -238,6 +282,14 @@ export function CalendarGrid({
                       const heightPct = Math.max(0.6, ((endMin - startMin) / MINUTES_PER_DAY) * 100);
                       const widthPct = 100 / columnCount;
 
+                      // Title in a deeper shade of the category (mixed toward
+                      // the foreground) so pale presets like Sand or Sky still
+                      // read on their own pastel fill.
+                      const titleColor = `color-mix(in oklch, ${categoryColor(color)} 70%, var(--foreground))`;
+                      // Only the title fits when the card is shorter than two lines.
+                      const compact =
+                        hourPx !== null && ((endMin - startMin) / 60) * hourPx < 34;
+
                       return (
                         <button
                           key={`${entry.id}-${segment.start.getTime()}`}
@@ -249,31 +301,44 @@ export function CalendarGrid({
                           style={{
                             top: `${topPct}%`,
                             height: `${heightPct}%`,
-                            left: `calc(${column * widthPct}% + 2px)`,
-                            width: `calc(${widthPct}% - 4px)`,
+                            left: `calc(${column * widthPct}% + 3px)`,
+                            width: `calc(${widthPct}% - 6px)`,
                             backgroundColor: categorySoftColor(color),
-                            borderLeftColor: categoryColor(color),
+                            borderColor: `color-mix(in oklch, ${categoryColor(color)} 25%, transparent)`,
                           }}
                           className={cn(
-                            "absolute z-10 min-h-4 overflow-hidden border-l-[3px] px-1.5 py-1 text-left text-[10px] leading-tight shadow-[inset_0_1px_0_0_oklch(1_0_0/0.35)] backdrop-blur-sm transition-transform hover:z-20 hover:scale-[1.015] hover:shadow-md sm:px-2 sm:py-1.5 sm:text-[11px]",
+                            "absolute z-10 flex min-h-4 items-start gap-1.5 overflow-hidden border px-1.5 py-1 text-left text-[10px] leading-tight shadow-[inset_0_1px_0_0_oklch(1_0_0/0.45),0_1px_3px_oklch(0_0_0/0.05)] backdrop-blur-sm transition-[transform,box-shadow] hover:z-20 hover:scale-[1.015] hover:shadow-md sm:px-2 sm:py-1.5 sm:text-[11px]",
                             // Squared edges mark where the session runs on into the next/previous day.
-                            segment.continuesBefore ? "rounded-t-none" : "rounded-t-lg sm:rounded-t-xl",
-                            segment.continuesAfter ? "rounded-b-none" : "rounded-b-lg sm:rounded-b-xl",
+                            segment.continuesBefore ? "rounded-t-none" : "rounded-t-xl",
+                            segment.continuesAfter ? "rounded-b-none" : "rounded-b-xl",
                           )}
                         >
-                          <p
-                            className="truncate font-semibold"
-                            style={{ color: categoryColor(color) }}
-                          >
-                            {segment.continuesBefore && "… "}
-                            {entry.title}
-                          </p>
-                          <p className="truncate tabular-nums text-muted-foreground">
-                            {formatTime(entry.startTime, timezone, timeFormat)}
-                            {entry.endTime && ` – ${formatTime(entry.endTime, timezone, timeFormat)}`}
-                            {" · "}
-                            {formatDurationShort(entry.durationSeconds ?? 0)}
-                          </p>
+                          {!compact && (
+                            <CategoryIcon
+                              color={color}
+                              icon={category?.icon}
+                              variant="onCard"
+                              className="mt-px hidden size-6 @[120px]:flex"
+                              iconClassName="size-3.5"
+                            />
+                          )}
+                          <span className="min-w-0 flex-1">
+                            <p className="truncate font-semibold" style={{ color: titleColor }}>
+                              {segment.continuesBefore && "… "}
+                              {entry.title}
+                            </p>
+                            {!compact && (
+                              <p className="truncate tabular-nums text-muted-foreground">
+                                {formatTime(entry.startTime, timezone, timeFormat)}
+                                {entry.endTime &&
+                                  ` – ${formatTime(entry.endTime, timezone, timeFormat)}`}
+                                <span className="hidden @[150px]:inline">
+                                  {" · "}
+                                  {formatDurationShort(entry.durationSeconds ?? 0)}
+                                </span>
+                              </p>
+                            )}
+                          </span>
                         </button>
                       );
                     })}

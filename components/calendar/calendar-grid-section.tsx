@@ -101,6 +101,7 @@ export async function CalendarGridSection({
       weekdayNarrow: formatInZone(dayStart, tz, "EEEEE"),
       weekdayShort: formatInZone(dayStart, tz, "EEE"),
       dayNumber: formatInZone(dayStart, tz, "d"),
+      monthShort: formatInZone(dayStart, tz, "MMM"),
       segments: segmentsFor(entries, dayStart, dayEnd),
     });
   }
