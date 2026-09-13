@@ -1,11 +1,15 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useCalendarNavigation } from "./calendar-transition";
 
 export type CalendarView = "day" | "3day" | "week" | "month";
+
+const VIEWS: CalendarView[] = ["day", "3day", "week", "month"];
 
 export function CalendarHeader({
   view,
@@ -17,9 +21,10 @@ export function CalendarHeader({
   label: string;
 }) {
   const router = useRouter();
+  const { navigate, isPending } = useCalendarNavigation();
 
-  function go(nextView: CalendarView, nextDateISO: string) {
-    router.push(`/calendar?view=${nextView}&date=${nextDateISO}`);
+  function href(nextView: CalendarView, nextDateISO: string) {
+    return `/calendar?view=${nextView}&date=${nextDateISO}`;
   }
 
   /** Local calendar date — toISOString() would report the UTC day and jump a day after midnight. */
@@ -28,36 +33,52 @@ export function CalendarHeader({
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }
 
-  function shift(days: number) {
+  function shiftedISO(days: number) {
     const d = new Date(dateISO + "T12:00:00");
     d.setDate(d.getDate() + days);
-    go(view, localISO(d));
+    return localISO(d);
   }
 
   const stepDays = view === "day" ? 1 : view === "3day" ? 3 : view === "week" ? 7 : 30;
+  const prevHref = href(view, shiftedISO(-stepDays));
+  const nextHref = href(view, shiftedISO(stepDays));
+  const todayHref = href(view, localISO(new Date()));
+
+  // The handful of places a click almost always goes next: warm them as soon
+  // as this header renders so the actual click has nothing left to wait on.
+  useEffect(() => {
+    router.prefetch(prevHref);
+    router.prefetch(nextHref);
+    router.prefetch(todayHref);
+    for (const v of VIEWS) {
+      if (v !== view) router.prefetch(href(v, dateISO));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prevHref, nextHref, todayHref, view, dateISO]);
 
   return (
     <div className="flex shrink-0 flex-col gap-2 sm:gap-3">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="truncate font-serif text-base font-semibold capitalize sm:text-lg">{label}</h1>
+        <h1
+          className="truncate font-serif text-base font-semibold capitalize transition-opacity sm:text-lg"
+          style={{ opacity: isPending ? 0.6 : 1 }}
+        >
+          {label}
+        </h1>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => shift(-stepDays)} aria-label="Anterior">
+          <Button variant="outline" size="icon" onClick={() => navigate(prevHref)} aria-label="Anterior">
             <ChevronLeft className="size-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={() => shift(stepDays)} aria-label="Siguiente">
+          <Button variant="outline" size="icon" onClick={() => navigate(nextHref)} aria-label="Siguiente">
             <ChevronRight className="size-4" />
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => go(view, localISO(new Date()))}
-          >
+          <Button variant="outline" size="sm" onClick={() => navigate(todayHref)}>
             Hoy
           </Button>
         </div>
       </div>
 
-      <Tabs value={view} onValueChange={(v) => go(v as CalendarView, dateISO)}>
+      <Tabs value={view} onValueChange={(v) => navigate(href(v as CalendarView, dateISO))}>
         <TabsList className="h-9 w-full rounded-full bg-secondary p-1 sm:h-10">
           <TabsTrigger value="day" className="rounded-full data-active:rounded-full">
             Día

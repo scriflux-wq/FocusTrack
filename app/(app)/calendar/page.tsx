@@ -1,29 +1,27 @@
+import { Suspense } from "react";
 import { getUser } from "@/lib/supabase/server";
-import { getOrCreateSettings, getFinishedEntriesInRange } from "@/lib/db/queries";
+import { getOrCreateSettings } from "@/lib/db/queries";
 import {
   getDayRange,
   getWeekRange,
-  getMonthRange,
   formatDayLabel,
   formatInZone,
   toDateISO,
   addZonedDays,
-  capToNow,
 } from "@/lib/calendar/date-utils";
 import { CalendarHeader, type CalendarView } from "@/components/calendar/calendar-header";
 import {
-  CalendarGrid,
-  type DayColumn,
-  type DaySegment,
-} from "@/components/calendar/calendar-grid";
-import { MonthGrid, type MonthDay } from "@/components/calendar/month-grid";
-import { WeekSummaryCard } from "@/components/calendar/week-summary-card";
+  CalendarTransitionProvider,
+  CalendarPendingFade,
+} from "@/components/calendar/calendar-transition";
+import { CalendarGridSection } from "@/components/calendar/calendar-grid-section";
+import { DayDetailSection } from "@/components/calendar/day-detail-section";
+import {
+  CalendarGridSkeleton,
+  DayDetailSkeleton,
+} from "@/components/calendar/calendar-skeletons";
 import { AddEventFab } from "@/components/calendar/add-event-fab";
 import { MiniMonthCalendar } from "@/components/calendar/mini-month-calendar";
-import { DayDetailPanel } from "@/components/calendar/day-detail-panel";
-import { QuoteCard } from "@/components/ui/quote-card";
-import { getTrackedSeconds, getUntrackedSeconds, clipToWindow } from "@/lib/analytics/core";
-import type { TimeEntry } from "@/lib/db/schema";
 
 /**
  * Viewport minus the app shell's chrome, so the calendar fills the screen
@@ -33,25 +31,6 @@ import type { TimeEntry } from "@/lib/db/schema";
 const FULL_HEIGHT =
   "h-[calc(100dvh-13rem)] min-h-[24rem] lg:h-[calc(100dvh-9rem)] lg:min-h-[32rem]";
 
-/** Entries touching [dayStart, dayEnd), regardless of which day they started on. */
-function overlapping(entries: TimeEntry[], dayStart: Date, dayEnd: Date) {
-  return entries.filter((e) => e.startTime < dayEnd && (e.endTime ?? dayEnd) > dayStart);
-}
-
-/** Clips each overlapping entry to the day, remembering whether it runs past either edge. */
-function segmentsFor(entries: TimeEntry[], dayStart: Date, dayEnd: Date): DaySegment[] {
-  return overlapping(entries, dayStart, dayEnd).map((entry) => {
-    const end = entry.endTime ?? dayEnd;
-    return {
-      entry,
-      start: entry.startTime > dayStart ? entry.startTime : dayStart,
-      end: end < dayEnd ? end : dayEnd,
-      continuesBefore: entry.startTime < dayStart,
-      continuesAfter: end > dayEnd,
-    };
-  });
-}
-
 export default async function CalendarPage({
   searchParams,
 }: {
@@ -60,143 +39,83 @@ export default async function CalendarPage({
   const user = await getUser();
   if (!user) return null;
 
+  // Only what the header and mini-calendar need to render — the entries
+  // query lives entirely inside CalendarGridSection/DayDetailSection below,
+  // so this part resolves fast and never blocks on it.
   const settings = await getOrCreateSettings(user.id);
   const params = await searchParams;
   const view = (params.view as CalendarView) ?? settings.defaultCalendarView;
   const referenceDate = params.date ? new Date(params.date + "T12:00:00Z") : new Date();
   const tz = settings.timezone;
   const referenceDateISO = toDateISO(referenceDate, tz);
-  const { start: selectedDayStart, end: selectedDayEnd } = getDayRange(referenceDate, tz);
-
-  if (view === "month") {
-    const { start: monthStart } = getMonthRange(referenceDate, tz);
-    const gridStart = getWeekRange(monthStart, tz, settings.weekStartsOn).start;
-    const gridEnd = addZonedDays(gridStart, tz, 42);
-    const entries = await getFinishedEntriesInRange(user.id, gridStart, gridEnd);
-    const selectedDayEntries = overlapping(entries, selectedDayStart, selectedDayEnd);
-
-    const currentMonthLabel = formatInZone(referenceDate, tz, "MMMM yyyy");
-    const currentMonthKey = formatInZone(referenceDate, tz, "yyyy-MM");
-    const todayStart = getDayRange(new Date(), tz).start;
-
-    const weeks: MonthDay[][] = [];
-    for (let w = 0; w < 6; w++) {
-      const week: MonthDay[] = [];
-      for (let d = 0; d < 7; d++) {
-        const dayStart = addZonedDays(gridStart, tz, w * 7 + d);
-        const dayEnd = addZonedDays(dayStart, tz, 1);
-        week.push({
-          dayStart,
-          dateISO: toDateISO(dayStart, tz),
-          dayNumber: Number(formatInZone(dayStart, tz, "d")),
-          inCurrentMonth: formatInZone(dayStart, tz, "yyyy-MM") === currentMonthKey,
-          isToday: dayStart.getTime() === todayStart.getTime(),
-          entries: overlapping(entries, dayStart, dayEnd),
-        });
-      }
-      weeks.push(week);
-    }
-
-    return (
-      <div className={`flex flex-col gap-4 lg:flex-row lg:gap-6 ${FULL_HEIGHT}`}>
-        <div className="flex min-h-0 flex-1 flex-col gap-3">
-          <CalendarHeader view={view} dateISO={referenceDateISO} label={currentMonthLabel} />
-          <div className="min-h-0 flex-1">
-            <MonthGrid weeks={weeks} timezone={tz} />
-          </div>
-        </div>
-        <div className="hidden w-[300px] shrink-0 flex-col gap-4 overflow-y-auto lg:flex">
-          <DayDetailPanel
-            label={formatDayLabel(referenceDate, tz)}
-            entries={selectedDayEntries}
-            timezone={tz}
-            timeFormat={settings.timeFormat}
-          />
-          <QuoteCard seed={1} />
-        </div>
-        <AddEventFab />
-      </div>
-    );
-  }
-
-  const dayCount = view === "day" ? 1 : view === "3day" ? 3 : 7;
-  const rangeStart =
-    view === "week"
-      ? getWeekRange(referenceDate, tz, settings.weekStartsOn).start
-      : getDayRange(referenceDate, tz).start;
-  const rangeEnd = addZonedDays(rangeStart, tz, dayCount);
-
-  const entries = await getFinishedEntriesInRange(user.id, rangeStart, rangeEnd);
-
-  const days: DayColumn[] = [];
-  for (let i = 0; i < dayCount; i++) {
-    const dayStart = addZonedDays(rangeStart, tz, i);
-    const dayEnd = addZonedDays(dayStart, tz, 1);
-    days.push({
-      dayStart,
-      weekdayNarrow: formatInZone(dayStart, tz, "EEEEE"),
-      weekdayShort: formatInZone(dayStart, tz, "EEE"),
-      dayNumber: formatInZone(dayStart, tz, "d"),
-      segments: segmentsFor(entries, dayStart, dayEnd),
-    });
-  }
-
-  const selectedDayEntries = overlapping(entries, selectedDayStart, selectedDayEnd);
 
   const label =
-    view === "day"
-      ? formatDayLabel(referenceDate, tz)
-      : `${formatInZone(rangeStart, tz, "d MMM")} – ${formatInZone(
-          new Date(rangeEnd.getTime() - 1),
-          tz,
-          "d MMM yyyy",
-        )}`;
-
-  let weeklyUntrackedSeconds = 0;
-  if (view === "week") {
-    const now = new Date();
-    for (const day of days) {
-      const dayEnd = addZonedDays(day.dayStart, tz, 1);
-      // "Untracked" spans the whole calendar day (from midnight), capped so
-      // it never claims time that hasn't happened yet.
-      weeklyUntrackedSeconds += getUntrackedSeconds(
-        entries,
-        day.dayStart,
-        capToNow(dayEnd, now),
-      );
-    }
-  }
+    view === "month"
+      ? formatInZone(referenceDate, tz, "MMMM yyyy")
+      : view === "day"
+        ? formatDayLabel(referenceDate, tz)
+        : rangeLabel(view, referenceDate, tz, settings.weekStartsOn);
 
   return (
-    <div className={`flex flex-col gap-4 lg:flex-row lg:gap-6 ${FULL_HEIGHT}`}>
-      <div className="flex min-h-0 flex-1 flex-col gap-3">
-        <CalendarHeader view={view} dateISO={referenceDateISO} label={label} />
-        <div className="min-h-0 flex-1">
-          <CalendarGrid days={days} timezone={tz} timeFormat={settings.timeFormat} />
+    <CalendarTransitionProvider>
+      <div className={`flex flex-col gap-4 lg:flex-row lg:gap-6 ${FULL_HEIGHT}`}>
+        <div className="flex min-h-0 flex-1 flex-col gap-3">
+          <CalendarHeader view={view} dateISO={referenceDateISO} label={label} />
+          <CalendarPendingFade className="flex min-h-0 flex-1 flex-col gap-3">
+            <Suspense fallback={<CalendarGridSkeleton view={view} />}>
+              <CalendarGridSection
+                userId={user.id}
+                view={view}
+                referenceDate={referenceDate}
+                tz={tz}
+                weekStartsOn={settings.weekStartsOn}
+                timeFormat={settings.timeFormat}
+              />
+            </Suspense>
+          </CalendarPendingFade>
         </div>
-        {view === "week" && (
-          <WeekSummaryCard
-            trackedSeconds={getTrackedSeconds(clipToWindow(entries, rangeStart, rangeEnd))}
-            untrackedSeconds={weeklyUntrackedSeconds}
-          />
-        )}
-      </div>
 
-      <div className="hidden w-[300px] shrink-0 flex-col gap-4 overflow-y-auto lg:flex">
-        <MiniMonthCalendar
-          referenceDateISO={referenceDateISO}
-          weekStartsOn={settings.weekStartsOn}
-        />
-        <DayDetailPanel
-          label={formatDayLabel(referenceDate, tz)}
-          entries={selectedDayEntries}
-          timezone={tz}
-          timeFormat={settings.timeFormat}
-        />
-        <QuoteCard seed={2} />
-      </div>
+        <div className="hidden w-[300px] shrink-0 flex-col gap-4 overflow-y-auto lg:flex">
+          {view !== "month" && (
+            <MiniMonthCalendar
+              referenceDateISO={referenceDateISO}
+              weekStartsOn={settings.weekStartsOn}
+            />
+          )}
+          <CalendarPendingFade className="flex flex-col gap-4">
+            <Suspense fallback={<DayDetailSkeleton />}>
+              <DayDetailSection
+                userId={user.id}
+                referenceDate={referenceDate}
+                tz={tz}
+                timeFormat={settings.timeFormat}
+                quoteSeed={view === "month" ? 1 : 2}
+              />
+            </Suspense>
+          </CalendarPendingFade>
+        </div>
 
-      <AddEventFab />
-    </div>
+        <AddEventFab />
+      </div>
+    </CalendarTransitionProvider>
   );
+}
+
+function rangeLabel(
+  view: CalendarView,
+  referenceDate: Date,
+  tz: string,
+  weekStartsOn: number,
+): string {
+  const dayCount = view === "3day" ? 3 : 7;
+  const rangeStart =
+    view === "week"
+      ? getWeekRange(referenceDate, tz, weekStartsOn).start
+      : getDayRange(referenceDate, tz).start;
+  const rangeEnd = addZonedDays(rangeStart, tz, dayCount);
+  return `${formatInZone(rangeStart, tz, "d MMM")} – ${formatInZone(
+    new Date(rangeEnd.getTime() - 1),
+    tz,
+    "d MMM yyyy",
+  )}`;
 }

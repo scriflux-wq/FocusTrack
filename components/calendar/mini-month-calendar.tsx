@@ -3,7 +3,6 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   startOfMonth,
-  endOfMonth,
   startOfWeek,
   addDays,
   isSameMonth,
@@ -12,6 +11,7 @@ import {
 } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { useCalendarNavigation } from "./calendar-transition";
 
 export function MiniMonthCalendar({
   referenceDateISO,
@@ -22,6 +22,7 @@ export function MiniMonthCalendar({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { navigate } = useCalendarNavigation();
   const reference = new Date(referenceDateISO + "T12:00:00");
   const today = new Date();
 
@@ -30,10 +31,10 @@ export function MiniMonthCalendar({
   const days = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
   const weekdayLabels = days.slice(0, 7).map((d) => format(d, "EEEEE", { locale: es }));
 
-  function goToDay(day: Date) {
+  function hrefFor(day: Date) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("date", format(day, "yyyy-MM-dd"));
-    router.push(`/calendar?${params.toString()}`);
+    return `/calendar?${params.toString()}`;
   }
 
   return (
@@ -57,12 +58,17 @@ export function MiniMonthCalendar({
             <button
               key={day.toISOString()}
               type="button"
-              onClick={() => goToDay(day)}
+              onClick={() => navigate(hrefFor(day))}
+              // 42 cells is too many to prefetch up front (see Next's prefetching
+              // guide on large link lists) — warm just the one the user is
+              // about to click.
+              onMouseEnter={() => router.prefetch(hrefFor(day))}
               className={cn(
                 "mx-auto flex size-7 items-center justify-center rounded-full text-xs transition-colors",
                 !inMonth && "text-muted-foreground/40",
                 inMonth && !isSelected && "text-foreground hover:bg-secondary",
-                isSelected && "bg-primary text-primary-foreground font-semibold",
+                isSelected &&
+                  "bg-[linear-gradient(180deg,color-mix(in_oklch,var(--primary),white_16%),var(--primary))] font-semibold text-primary-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.35)]",
                 !isSelected && isToday && "ring-1 ring-primary text-primary font-semibold",
               )}
             >
