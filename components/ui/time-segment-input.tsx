@@ -11,15 +11,19 @@ const COMMIT_PAUSE_MS = 900;
  * that can't take a second digit (e.g. hour 9, minute 6) and it commits
  * immediately. Matches how macOS/iOS date fields work.
  *
- * Keystrokes are captured directly (not left to the browser's normal text
- * editing) and the pending digit is tracked in a ref, not just state: once
- * two digits complete a value, this calls `onComplete` to move focus to the
- * next segment, which fires a synchronous blur on this input. A blur handler
- * reading component *state* would still see the pre-update value at that
- * point — React only republishes state on the next render — and would
- * re-commit the stale single digit over the value just typed (typing "11"
- * landed as "01"). A ref has no such delay, so the blur handler correctly
- * sees "already committed, nothing pending" and does nothing.
+ * Driven by `onChange`, not `onKeyDown`: virtual keyboards on phones don't
+ * reliably fire keydown with a usable `.key` for every tap, but `onChange`
+ * always fires. The field must also stay genuinely editable — an early
+ * version made it `readOnly` to fully own the rendered text, which works
+ * fine with a physical keyboard but silently stops iOS/Android from showing
+ * a keyboard at all for a read-only field, so nothing could be typed on
+ * mobile. Select-all-on-focus does the same job without that cost: the
+ * first digit typed replaces the whole selection natively, the second
+ * appends after it, and the pending digit is tracked in a ref (not just
+ * state) so the blur `onComplete` triggers when advancing to the next
+ * segment sees "nothing pending" immediately rather than the pre-update
+ * value — otherwise it would re-commit a stale single digit over the value
+ * just typed (typing "11" landing as "01").
  */
 export const TimeSegmentInput = forwardRef<
   HTMLInputElement,
@@ -66,42 +70,44 @@ export const TimeSegmentInput = forwardRef<
     timeoutRef.current = setTimeout(() => commitValue(text, false), COMMIT_PAUSE_MS);
   }
 
-  function typeDigit(digit: string) {
-    const next = (pendingRef.current ?? "") + digit;
-    // A second digit could still follow (e.g. "1" -> maybe "11"..."19") only
-    // if the tens value it implies still fits under `max`; otherwise this
-    // digit is already the whole answer (hour "9", minute "7").
-    const canTakeAnotherDigit = next.length === 1 && Number(next) * 10 <= max;
-    if (next.length >= 2 || !canTakeAnotherDigit) {
-      commitValue(next, true);
-    } else {
-      setPending(next);
-      scheduleCommit(next);
-    }
-  }
-
   return (
     <input
       ref={ref}
       aria-label={ariaLabel}
       inputMode="numeric"
-      readOnly
+      pattern="[0-9]*"
+      autoComplete="off"
       value={display ?? String(value).padStart(2, "0")}
       onFocus={(e) => e.currentTarget.select()}
       onBlur={() => {
         if (pendingRef.current !== null) commitValue(pendingRef.current, false);
       }}
+      onChange={(e) => {
+        const next = e.target.value.replace(/\D/g, "").slice(-2);
+        if (next === "") {
+          setPending(null);
+          clearScheduled();
+          return;
+        }
+        // A second digit could still follow (e.g. "1" -> maybe "11"..."19")
+        // only if the tens value it implies still fits under `max`;
+        // otherwise this digit is already the whole answer (hour "9").
+        const canTakeAnotherDigit = next.length === 1 && Number(next) * 10 <= max;
+        if (next.length >= 2 || !canTakeAnotherDigit) {
+          commitValue(next, true);
+        } else {
+          setPending(next);
+          scheduleCommit(next);
+        }
+      }}
       onKeyDown={(e) => {
-        if (/^[0-9]$/.test(e.key)) {
-          e.preventDefault();
-          typeDigit(e.key);
-        } else if (e.key === "ArrowUp") {
+        if (e.key === "ArrowUp") {
           e.preventDefault();
           onChange(((value + 1) % (max + 1) + (max + 1)) % (max + 1));
         } else if (e.key === "ArrowDown") {
           e.preventDefault();
           onChange(((value - 1) % (max + 1) + (max + 1)) % (max + 1));
-        } else if (e.key === "Backspace" || e.key === "Escape") {
+        } else if (e.key === "Escape") {
           e.preventDefault();
           setPending(null);
           clearScheduled();
